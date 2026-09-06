@@ -190,14 +190,17 @@ async function startTelegram() {
   await watchSalons()
 
   const names = [...watched.values()].map(s => s.title)
-  log(names.length ? `écoute : ${names.join(', ')}` : 'aucun salon actif — ajoute-les depuis l’interface, onglet Salons')
+  const configured = (await store.salons()).length
+  if (names.length) log(`écoute : ${names.join(', ')}`)
+  else if (configured) log(`\x1b[31m${configured} salon(s) configuré(s) mais aucun joignable\x1b[0m — voir l’erreur ci-dessus ; retire-le et rajoute-le depuis l’onglet Salons.`)
+  else log('aucun salon actif — ajoute-les depuis l’interface, onglet Salons')
 
   client.addEventHandler(async ev => {
     const salon = watched.get(tg.chatIdOf(ev.message))
     if (salon) ingestor.queue(salon, ev.message)
   }, new NewMessage({}))
 
-  if (BACKFILL) for (const s of await store.salons()) await backfillOne(s)
+  if (BACKFILL) for (const s of watched.values()) await backfillOne(s)
 }
 
 /* ── Démo ────────────────────────────────────────────────────────────────── */
@@ -218,6 +221,22 @@ async function seedDemo() {
 }
 
 /* ── Démarrage ───────────────────────────────────────────────────────────── */
+// Relancer sans avoir fermé la fenêtre précédente est le faux pas le plus
+// courant : « EADDRINUSE » ne dit rien à personne.
+server.on('error', e => {
+  if (e.code === 'EADDRINUSE') {
+    console.error('')
+    console.error('  \x1b[31mLe port ' + PORT + ' est déjà pris.\x1b[0m')
+    console.error('  Talent Deck tourne sans doute déjà dans une autre fenêtre :')
+    console.error('  ouvre \x1b[4mhttp://localhost:' + PORT + '\x1b[0m, ou ferme cette fenêtre-là avec Ctrl+C.')
+    console.error('  Pour en lancer un second en parallèle : \x1b[35mset PORT=8788 && npm start\x1b[0m')
+    console.error('')
+  } else {
+    console.error(e)
+  }
+  process.exit(1)
+})
+
 server.listen(PORT, async () => {
   console.log('')
   console.log('  \x1b[35m▸ Talent Deck\x1b[0m — ouvre \x1b[4mhttp://localhost:' + PORT + '\x1b[0m')

@@ -118,6 +118,21 @@ sont ceux du vendeur, le filtre `min_age` porte sur du déclaratif.
 
 ---
 
+## Quand ça coince
+
+**« Salon introuvable » au démarrage.** Le worker lit la liste de tes
+conversations pour retrouver le salon ; s'il n'y est pas, c'est que le compte
+Telegram connecté n'en est plus membre, ou que le salon a été supprimé. Retire-le
+et rajoute-le depuis l'onglet Salons.
+
+**« Le port 8787 est déjà pris ».** Talent Deck tourne déjà dans une autre
+fenêtre — ouvre <http://localhost:8787>, ou ferme cette fenêtre-là avec Ctrl+C.
+Pour deux instances en parallèle : `set PORT=8788 && npm start`.
+
+**`0 photo(s)` sur toutes les annonces.** Le terminal dit maintenant pourquoi
+(image repérée mais non téléchargée, ou l'erreur exacte). Un `npm run backfill`
+complète les photos manquantes des annonces déjà captées.
+
 ## Quand un salon n'est pas lu correctement
 
 Chaque marketplace écrit ses libellés à sa façon. Si un salon remplit peu de
