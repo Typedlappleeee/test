@@ -17,17 +17,35 @@ export const MAX_PHOTOS = 4
 export function createIngestor({ client, store, log = console.log }) {
   const buffers = new Map()
 
+  /**
+   * Un message porte une image de deux façons : `photo` (envoi compressé,
+   * le cas courant) ou `document` avec un mime image/* (envoi « en fichier »).
+   * Les salons utilisent les deux, il faut donc accepter les deux.
+   */
+  function imageOf(m) {
+    if (m.photo) return 'photo'
+    const doc = m.document ?? (m.media && m.media.document)
+    if (doc?.mimeType?.startsWith?.('image/')) return 'document'
+    return null
+  }
+
   async function downloadPhotos(messages) {
     const out = []
+    let seen = 0
     for (const m of messages) {
       if (out.length >= MAX_PHOTOS) break
-      if (!m.photo) continue
+      if (!imageOf(m)) continue
+      seen++
       try {
-        const buffer = await client.downloadMedia(m, { thumb: -1 })
-        if (!buffer?.length) continue
+        // Sans option : GramJS télécharge le média en pleine taille. Passer
+        // `thumb` demanderait une miniature — et un index de miniature
+        // invalide ne renvoie rien du tout.
+        const buffer = await client.downloadMedia(m)
+        if (!buffer?.length) { log('  photo vide (message ' + m.id + ')'); continue }
         out.push({ buffer, hash: createHash('sha1').update(buffer).digest('hex').slice(0, 16) })
-      } catch (e) { log('  photo non téléchargée :', e.message) }
+      } catch (e) { log('  photo non téléchargée (message ' + m.id + ') : ' + e.message) }
     }
+    if (seen && !out.length) log('  ' + seen + ' image(s) repérée(s) mais aucune téléchargée')
     return out
   }
 
@@ -37,6 +55,16 @@ export function createIngestor({ client, store, log = console.log }) {
     if (!text) return 'skipped'
 
     const parsed = parseListing(text)
+
+    // Quand le salon fournit une référence (« Listing ID #8260 »), la clé de
+    // dédoublonnage ne dépend pas des photos : on peut donc savoir AVANT de
+    // télécharger si l'annonce est déjà en base avec ses images, et s'épargner
+    // le transfert. C'est ce qui rend un second rattrapage quasi instantané.
+    if (parsed.fields.listing_id && store.hasPhotos) {
+      const preKey = dedupeKey(parsed.fields, parsed.raw, [])
+      if (await store.hasPhotos(preKey)) return 'duplicate'
+    }
+
     const photos = await downloadPhotos(messages)
     parsed.dedupeKey = dedupeKey(parsed.fields, parsed.raw, photos.map(p => p.hash))
 
@@ -56,8 +84,16 @@ export function createIngestor({ client, store, log = console.log }) {
       prefs: await store.prefs(),
     })
 
+    // Une annonce déjà en base mais sans photo doit pouvoir les récupérer :
+    // sinon, ingérée une fois sans images, elle resterait sans images à jamais.
+    let completed = false
+    if (res === 'duplicate' && stored.length && store.completePhotos) {
+      completed = await store.completePhotos(parsed.dedupeKey, stored)
+    }
+
     const who = parsed.fields.listing_id ? '#' + parsed.fields.listing_id : (parsed.fields.origin ?? '?')
-    log(`  ${res === 'inserted' ? '✓' : '·'} ${res.padEnd(9)} ${who} · ${stored.length} photo(s) · lu à ${Math.round(parsed.confidence * 100)} %`)
+    const label = completed ? 'photos +' : res
+    log(`  ${res === 'inserted' || completed ? '✓' : '·'} ${label.padEnd(9)} ${who} · ${stored.length} photo(s) · lu à ${Math.round(parsed.confidence * 100)} %`)
     return res
   }
 

@@ -126,6 +126,21 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
       return 'inserted'
     },
 
+    /** Cette annonce est-elle déjà en base, photos comprises ? */
+    hasPhotos(key) {
+      const l = byKey.get(key)
+      return !!(l && l.photos?.length)
+    },
+
+    /** Ajoute les photos à une annonce déjà enregistrée qui n'en avait pas. */
+    completePhotos(key, photos) {
+      const l = byKey.get(key)
+      if (!l || l.photos?.length || !photos.length) return false
+      l.photos = photos
+      schedule(); notify('listings')
+      return true
+    },
+
     // ── Décisions et suivi ────────────────────────────────────────────────
     decide(id, decision) {
       if (!byKey.has(id)) return false

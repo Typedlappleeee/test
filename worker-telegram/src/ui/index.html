@@ -137,7 +137,7 @@ h1 {
 @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
 
 /* ── Carte du deck ───────────────────────────────────────────────────────── */
-.stage { position: relative; height: 596px; }
+.stage { position: relative; height: 640px; }
 .card {
   position: absolute; inset: 0; display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--edge); border-radius: 18px;
@@ -343,7 +343,7 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
 @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
 
 /* Photos réelles de l'annonce */
-.shots { position: relative; height: 232px; flex-shrink: 0; background: var(--surface-2); overflow: hidden; }
+.shots { position: relative; height: 286px; flex-shrink: 0; background: var(--surface-2); overflow: hidden; }
 .shots img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .shots .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,10,17,.45) 0 22%, transparent 42%, rgba(11,10,17,.82)); }
 .shots .bars { position: absolute; top: 8px; left: 10px; right: 10px; display: flex; gap: 3px; }
@@ -366,6 +366,36 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
 .dialog-row .id b { font-size: 13px; font-weight: 600; }
 .dialog-row .id span { display: block; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); }
 .dialog-row .n { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.zoom-btn {
+  position: absolute; top: 10px; right: 10px; z-index: 2; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,.22); background: rgba(11,10,17,.55); color: #EFEDF7;
+  backdrop-filter: blur(4px); font-size: 14px; line-height: 1;
+}
+.zoom-btn:hover { background: rgba(11,10,17,.8); }
+
+/* Plein écran : trier des modèles, c'est d'abord regarder les photos. */
+.lightbox { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; background: rgba(6,5,10,.94); }
+.lightbox .frame { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 22px; }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+.lightbox .bar { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid rgba(255,255,255,.1); }
+.lightbox .bar .who { flex: 1; font-family: var(--font-display); font-size: 15px; font-weight: 700; color: #EFEDF7; }
+.lightbox .bar .idx { font-family: var(--font-mono); font-size: 12px; color: rgba(239,237,247,.6); }
+.lightbox .side {
+  position: absolute; top: 0; bottom: 66px; width: 22%; border: none; background: none;
+  cursor: pointer; color: rgba(239,237,247,.5); font-size: 30px;
+}
+.lightbox .side:hover { color: #EFEDF7; background: rgba(255,255,255,.04); }
+.lightbox .side.l { left: 0; } .lightbox .side.r { right: 0; }
+
+/* Tri du deck */
+.sortbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.sortbar label { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+.sortbar select {
+  padding: 6px 9px; border-radius: 8px; border: 1px solid var(--edge);
+  background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+
 .search { width: 100%; padding: 8px 11px; border-radius: 9px; border: 1px solid var(--edge); background: var(--surface-2); font-size: 13px; }
 </style>
 
@@ -404,8 +434,23 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
   <section id="p-deck" role="tabpanel" aria-labelledby="tab-deck">
     <div class="split">
       <div>
+        <div class="sortbar">
+          <label for="sort-by">Trier</label>
+          <select id="sort-by">
+            <option value="auto">Affinité (ou récentes)</option>
+            <option value="recent">Plus récentes</option>
+            <option value="old">Plus anciennes</option>
+            <option value="price-asc">Prix croissant</option>
+            <option value="price-desc">Prix décroissant</option>
+            <option value="english">Meilleur anglais</option>
+            <option value="hours">Plus d’heures / jour</option>
+            <option value="age-asc">Plus jeunes</option>
+          </select>
+          <label for="sort-salon" style="margin-left:6px">Salon</label>
+          <select id="sort-salon"><option value="all">Tous</option></select>
+        </div>
         <div class="stage" id="stage"></div>
-        <p class="hint">Glisse la carte, ou <kbd class="key">←</kbd> pass · <kbd class="key">→</kbd> match · <kbd class="key">↓</kbd> plus tard</p>
+        <p class="hint">Glisse la carte, ou <kbd class="key">←</kbd> pass · <kbd class="key">→</kbd> match · <kbd class="key">↓</kbd> plus tard · <kbd class="key">espace</kbd> agrandir la photo</p>
       </div>
 
       <div>
@@ -823,6 +868,7 @@ const state = {
   telegram: { connected: false, demo: false, me: null },
   dialogs: null, dialogQuery: '',
   history: [], tab: 'deck', stageFilter: 'all', showFiltered: false,
+  sortBy: 'auto', salonFilter: 'all', lightbox: null,
 };
 
 const STAGES = [
@@ -873,12 +919,35 @@ const model = () => trainModel(Object.entries(state.decisions)
   .map(([id, decision]) => { const l = state.listings.find(x => x.id === id); return l ? { fields: l.fields, decision } : null; })
   .filter(Boolean));
 
+const num = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
+
+/* Les annonces sans la donnée triée finissent en bas plutôt qu'en tête :
+   une annonce sans prix n'est pas « la moins chère ». */
+const SORTERS = {
+  recent:       (a, b) => b.postedAt - a.postedAt,
+  old:          (a, b) => a.postedAt - b.postedAt,
+  'price-asc':  (a, b) => num(a.fields.price?.amount, Infinity) - num(b.fields.price?.amount, Infinity),
+  'price-desc': (a, b) => num(b.fields.price?.amount, -Infinity) - num(a.fields.price?.amount, -Infinity),
+  english:      (a, b) => num(b.fields.english_level, -1) - num(a.fields.english_level, -1),
+  hours:        (a, b) => num(b.fields.hours_per_day?.hours, -1) - num(a.fields.hours_per_day?.hours, -1),
+  'age-asc':    (a, b) => num(a.fields.age, Infinity) - num(b.fields.age, Infinity),
+};
+
 function deck() {
   const m = model();
-  const open = state.listings.filter(l => l.status === 'inbox'
+  let open = state.listings.filter(l => l.status === 'inbox'
     && state.decisions[l.id] !== 'match' && state.decisions[l.id] !== 'pass');
-  if (m.total < MIN_DECISIONS) return open.sort((a, b) => b.postedAt - a.postedAt);
-  return open.sort((a, b) => (scoreListing(b.fields, m).score ?? 0) - (scoreListing(a.fields, m).score ?? 0));
+  if (state.salonFilter !== 'all') open = open.filter(l => salonTitleOf(l) === state.salonFilter);
+
+  const chosen = SORTERS[state.sortBy]
+    || (m.total < MIN_DECISIONS
+        ? SORTERS.recent
+        : (a, b) => (scoreListing(b.fields, m).score ?? 0) - (scoreListing(a.fields, m).score ?? 0));
+
+  // « Plus tard » repousse l'annonce en fin de pile : elle reviendra quand le
+  // reste sera tranché. Sans ça le bouton ne ferait rien de visible.
+  const later = l => (state.decisions[l.id] === 'later' ? 1 : 0);
+  return open.sort((a, b) => later(a) - later(b) || chosen(a, b));
 }
 const filteredOut = () => state.listings.filter(l => l.status === 'filtered');
 const reviewList  = () => state.listings.filter(l => l.status === 'review');
@@ -939,6 +1008,16 @@ function render() {
   for (const [tab, panel] of [['deck','p-deck'],['fav','p-fav'],['paste','p-paste'],['salons','p-salons'],['filters','p-filters']]) {
     $('#tab-' + tab).setAttribute('aria-selected', String(state.tab === tab));
     $('#' + panel).classList.toggle('hidden', state.tab !== tab);
+  }
+
+  const sel = $('#sort-salon');
+  const names = [...new Set(state.listings.filter(l => l.status === 'inbox').map(salonTitleOf))].sort();
+  const wanted = ['all', ...names].join('|');
+  if (sel.dataset.names !== wanted) {
+    sel.dataset.names = wanted;
+    sel.innerHTML = '<option value="all">Tous</option>' + names.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+    sel.value = names.includes(state.salonFilter) ? state.salonFilter : 'all';
+    if (sel.value === 'all') state.salonFilter = 'all';
   }
 
   renderDeck(d);
@@ -1011,13 +1090,29 @@ function cardEl(l) {
 
   const affColor = s.ready ? (s.score >= 70 ? 'var(--match)' : s.score >= 45 ? 'var(--later)' : 'var(--pass)') : '';
 
-  el.innerHTML =
-    '<div class="thumb" style="background:' + tint(l) + '">'
-      + '<span class="thumb-meta">'
-        + '<span class="thumb-ref">' + (f.listing_id ? '#' + esc(f.listing_id) : esc(l.salon)) + '</span>'
-        + '<span class="thumb-price">' + esc(money(f.price)) + '</span>'
-      + '</span>'
-    + '</div>'
+  // Les photos captées sur Telegram si l'annonce en a ; sinon une teinte
+  // dérivée de sa référence, pour que deux annonces ne se confondent pas.
+  const shots = l.photos || [];
+  const ref = f.listing_id ? '#' + esc(f.listing_id) : esc(salonTitleOf(l));
+  const head = shots.length
+    ? '<div class="shots" data-i="0">'
+        + '<img src="' + esc(shots[0].url) + '" alt="Photo de l’annonce" draggable="false">'
+        + '<span class="scrim"></span>'
+        + '<button class="zoom-btn" aria-label="Agrandir la photo" title="Agrandir (barre d’espace)">⤢</button>'
+        + (shots.length > 1
+            ? '<span class="bars">' + shots.map((_, n) => '<i class="' + (n === 0 ? 'on' : '') + '"></i>').join('') + '</span>'
+              + '<button class="nav prev" aria-label="Photo précédente"></button>'
+              + '<button class="nav next" aria-label="Photo suivante"></button>'
+            : '')
+        + '<span class="meta"><span class="thumb-ref">' + ref + '</span>'
+          + '<span class="thumb-price" style="margin-left:auto">' + esc(money(f.price)) + '</span></span>'
+      + '</div>'
+    : '<div class="thumb" style="background:' + tint(l) + '">'
+        + '<span class="thumb-meta"><span class="thumb-ref">' + ref + '</span>'
+          + '<span class="thumb-price">' + esc(money(f.price)) + '</span></span>'
+      + '</div>';
+
+  el.innerHTML = head
     + '<div class="verdict" id="verdict"></div>'
     + '<div class="card-body">'
       + '<div class="card-head">'
@@ -1057,6 +1152,11 @@ function cardEl(l) {
     };
     shotBox.querySelector('.prev').addEventListener('pointerdown', e => { e.stopPropagation(); step(-1); });
     shotBox.querySelector('.next').addEventListener('pointerdown', e => { e.stopPropagation(); step(1); });
+  }
+  const zoom = el.querySelector('.zoom-btn');
+  if (zoom) {
+    zoom.addEventListener('pointerdown', e => e.stopPropagation());
+    zoom.addEventListener('click', () => openLightbox(l, Number(shotBox?.dataset.i || 0)));
   }
   attachDrag(el, l);
   return el;
@@ -1124,6 +1224,55 @@ function attachDrag(el, l) {
   };
   el.addEventListener('pointerup', end);
   el.addEventListener('pointercancel', end);
+}
+
+/* ── Plein écran ────────────────────────────────────────────────────────── */
+function openLightbox(l, i) {
+  if (!l.photos?.length) return;
+  state.lightbox = { id: l.id, i: Math.max(0, Math.min(l.photos.length - 1, i || 0)) };
+  renderLightbox();
+}
+function closeLightbox() {
+  state.lightbox = null;
+  document.getElementById('lightbox')?.remove();
+}
+function stepLightbox(d) {
+  if (!state.lightbox) return;
+  const l = state.listings.find(x => x.id === state.lightbox.id);
+  if (!l) return;
+  state.lightbox.i = Math.max(0, Math.min(l.photos.length - 1, state.lightbox.i + d));
+  renderLightbox();
+}
+function renderLightbox() {
+  document.getElementById('lightbox')?.remove();
+  if (!state.lightbox) return;
+  const l = state.listings.find(x => x.id === state.lightbox.id);
+  if (!l?.photos?.length) return;
+  const i = state.lightbox.i;
+  const box = document.createElement('div');
+  box.className = 'lightbox';
+  box.id = 'lightbox';
+  box.innerHTML =
+    '<div class="frame"><img src="' + esc(l.photos[i].url) + '" alt="Photo de l’annonce"></div>'
+    + (l.photos.length > 1 ? '<button class="side l" aria-label="Précédente">‹</button><button class="side r" aria-label="Suivante">›</button>' : '')
+    + '<div class="bar">'
+      + '<span class="who">' + esc(titleOf(l)) + '</span>'
+      + '<span class="idx">' + (i + 1) + ' / ' + l.photos.length + '</span>'
+      + '<button class="act pass" style="flex:0 0 auto" data-d="pass">Pass ←</button>'
+      + '<button class="act match" style="flex:0 0 auto" data-d="match">Match →</button>'
+      + '<button class="btn" data-close>Fermer</button>'
+    + '</div>';
+  box.querySelector('[data-close]').onclick = closeLightbox;
+  box.querySelector('.side.l')?.addEventListener('click', () => stepLightbox(-1));
+  box.querySelector('.side.r')?.addEventListener('click', () => stepLightbox(1));
+  // Trancher sans quitter le plein écran : c'est là qu'on juge une annonce.
+  box.querySelectorAll('.act').forEach(b => b.onclick = () => {
+    const card = $('#stage .card:not(.ghost)');
+    closeLightbox();
+    if (card && deck()[0]?.id === l.id) fire(l, b.dataset.d, card);
+  });
+  box.querySelector('.frame').onclick = closeLightbox;
+  document.body.appendChild(box);
 }
 
 /* ── Panneau de tri ─────────────────────────────────────────────────────── */
@@ -1321,6 +1470,9 @@ function renderFilterPreview() {
 for (const t of ['deck','fav','paste','salons','filters']) {
   $('#tab-' + t).onclick = () => { state.tab = t; if (t === 'salons' && !state.dialogs) loadDialogs(); render(); };
 }
+$('#sort-by').onchange = e => { state.sortBy = e.target.value; render(); };
+$('#sort-salon').onchange = e => { state.salonFilter = e.target.value; render(); };
+
 $('#reload-dialogs').onclick = () => { state.dialogs = null; loadDialogs(); };
 $('#dialog-search').oninput = e => { state.dialogQuery = e.target.value; renderSalons(); };
 $('#toggle-filtered').onclick = () => { state.showFiltered = !state.showFiltered; render(); };
@@ -1342,8 +1494,18 @@ $('#undo').onclick = () => {
 };
 
 document.addEventListener('keydown', e => {
-  if (state.tab !== 'deck' || busy) return;
   if (e.target.closest('input, textarea, select')) return;
+
+  if (state.lightbox) {
+    if (e.key === 'Escape') { e.preventDefault(); closeLightbox(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); stepLightbox(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); stepLightbox(1); }
+    else if (e.key === ' ') { e.preventDefault(); closeLightbox(); }
+    return;
+  }
+  if (state.tab !== 'deck' || busy) return;
+
+  if (e.key === ' ') { e.preventDefault(); const top = deck()[0]; if (top) openLightbox(top, 0); return; }
   const d = e.key === 'ArrowLeft' ? 'pass' : e.key === 'ArrowRight' ? 'match' : e.key === 'ArrowDown' ? 'later' : null;
   if (!d) return;
   e.preventDefault();

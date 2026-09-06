@@ -44,6 +44,22 @@ export function makeStore(env) {
       return out
     },
 
+    /** Cette annonce est-elle déjà en base, photos comprises ? */
+    async hasPhotos(key) {
+      const { data } = await db.from('talent_listings')
+        .select('photos').eq('org_id', orgId).eq('dedupe_key', key).maybeSingle()
+      return Array.isArray(data?.photos) && data.photos.length > 0
+    },
+
+    /** Ajoute les photos à une annonce déjà enregistrée qui n'en avait pas. */
+    async completePhotos(key, photos) {
+      const { data } = await db.from('talent_listings')
+        .select('id, photos').eq('org_id', orgId).eq('dedupe_key', key).maybeSingle()
+      if (!data || (Array.isArray(data.photos) && data.photos.length)) return false
+      await db.from('talent_listings').update({ photos }).eq('id', data.id)
+      return true
+    },
+
     /**
      * Insère une annonce. Retourne 'inserted' | 'duplicate'.
      * Le dédoublonnage est une contrainte d'unicité en base : deux workers

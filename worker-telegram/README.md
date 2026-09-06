@@ -56,6 +56,15 @@ comprises, et apparaissent dans la page sans la rafraîchir.
 
 **Rattraper l'historique** d'un salon que tu viens d'ajouter : bouton
 **Rattraper** en face de son nom, ou `npm run backfill` au démarrage pour tous.
+Un rattrapage complète aussi les photos manquantes des annonces déjà captées,
+sans toucher à tes décisions — et saute celles qui ont déjà les leurs, donc un
+second passage est quasi instantané.
+
+**Trier vite.** Au clavier : `←` pass · `→` match · `↓` plus tard (l'annonce
+repasse en fin de pile) · `espace` agrandit les photos en plein écran, où les
+flèches font défiler et où tu peux trancher sans revenir en arrière. Le menu
+**Trier** ordonne le deck par prix, niveau d'anglais, heures par jour, âge ou
+date, et le menu **Salon** le restreint à une marketplace.
 
 Tant que le terminal reste ouvert, ça écoute. Tu peux fermer l'onglet du
 navigateur, c'est le worker qui capte, pas la page.
