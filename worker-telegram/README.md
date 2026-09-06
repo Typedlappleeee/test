@@ -1,75 +1,148 @@
-# Worker d'ingestion Telegram
+# Talent Deck — worker Telegram
 
-Il écoute les salons Telegram configurés depuis l'app (Talents → Salons), parse
-les annonces, télécharge les photos et pousse le tout dans Supabase. L'app ne se
-connecte jamais à Telegram : elle ne lit que la base.
+Écoute tes salons Telegram de marketplace, télécharge les photos, lit chaque
+annonce champ par champ, écarte les doublons — et te sert une interface pour
+trancher en match ou pass.
 
-## Pourquoi un compte utilisateur et non un bot
+**Deux modes, même code :**
 
-Un bot Telegram ne peut lire un salon que s'il en est membre, ce qui suppose
-d'être admin du salon ou de pouvoir y ajouter un bot. Sur une marketplace tierce
-où tu n'es qu'un membre parmi d'autres, c'est impossible. Le worker se connecte
-donc via MTProto avec **ton compte** : il voit exactement ce que tu vois, rien de
-plus.
+| Mode | Pour qui | Ce qu'il faut |
+|---|---|---|
+| **local** (`npm start`) | toi seul, sur ton PC | Node 20+. Rien d'autre. |
+| **Supabase** (`npm run start:supabase`) | une équipe qui partage le même parc | un projet Supabase |
 
-Ce que ça implique, sans détour :
+Commence par le mode local. Tu passeras à Supabase le jour où quelqu'un d'autre
+doit voir les mêmes annonces que toi.
 
-- `TG_SESSION` équivaut à un accès complet à ton compte Telegram. Traite ce
-  fichier comme un mot de passe : jamais dans un dépôt, jamais dans l'app livrée.
-- Telegram tolère mal les comptes automatisés qui *écrivent*. Ce worker ne fait
-  que lire et ne répond jamais : c'est le régime le moins risqué, pas un régime
-  sans risque. Utilise un compte dédié plutôt que ton compte principal.
-- Les annonces contiennent des données personnelles (photos, âge, nationalité).
-  Si tu es en UE, tu es responsable de traitement : conserve ce qui te sert,
-  supprime le reste, et sache répondre à une demande d'effacement. La table
-  `talent_listings` est faite pour ça — une suppression par `dedupe_key` efface
-  l'annonce, ses décisions et son favori en cascade.
+---
 
-## Mise en route
+## Voir à quoi ça ressemble, tout de suite
+
+```bash
+npm run start:demo
+```
+
+Ouvre <http://localhost:8787>. 40 annonces d'exemple, aucune installation,
+aucune connexion. Ferme avec Ctrl+C.
+
+---
+
+## Le brancher pour de vrai
+
+Il te faut **Node 20 ou plus** — <https://nodejs.org>, l'installeur par défaut
+fait l'affaire. Vérifie avec `node -v`.
 
 ```bash
 cd worker-telegram
-npm install
-cp .env.example .env
+npm install          # une fois
+npm run login        # une fois
+npm start
 ```
 
-1. **api_id / api_hash** — <https://my.telegram.org> → *API development tools*.
-   Reporte-les dans `.env`.
-2. **Session** — `npm run login`. Le script demande ton numéro, le code reçu et
-   ton mot de passe 2FA, puis imprime `TG_SESSION` **et la liste des salons
-   visibles depuis ce compte, avec leur identifiant**. Colle la session dans
-   `.env`, garde la liste sous la main.
-3. **Supabase** — joue `supabase/talents.sql` dans le SQL editor, puis récupère
-   `SUPABASE_SERVICE_KEY` (Settings → API → `service_role`). Cette clé contourne
-   les RLS : elle ne sort jamais du serveur.
-4. **ORG_ID** — l'organisation ScaleFlow qui recevra les annonces
-   (`select id, name from organizations;`).
-5. Dans l'app, **Talents → Salons → Ajouter**, avec le `@username` (salon public)
-   ou l'identifiant numérique donné à l'étape 2 (salon privé).
+`npm run login` te demande, dans l'ordre :
 
-```bash
-npm run backfill   # rattrape l'historique du salon, puis écoute en continu
-npm start          # écoute seulement les nouveaux messages
+1. **api_id / api_hash** — <https://my.telegram.org> → *API development tools* →
+   crée une application (n'importe quel nom). Gratuit, immédiat. Ce sont *tes*
+   identifiants d'application, pas ceux d'un bot.
+2. **Ton numéro**, le **code** reçu sur Telegram, ton **mot de passe 2FA** si tu
+   en as un.
+
+Tout est écrit dans `.env` automatiquement. Rien à copier-coller.
+
+Puis `npm start` ouvre <http://localhost:8787>. Va dans l'onglet **Salons** :
+tes salons Telegram sont listés, clique **Écouter** sur les marketplaces qui
+t'intéressent. C'est fini — les annonces arrivent toutes seules, photos
+comprises, et apparaissent dans la page sans la rafraîchir.
+
+**Rattraper l'historique** d'un salon que tu viens d'ajouter : bouton
+**Rattraper** en face de son nom, ou `npm run backfill` au démarrage pour tous.
+
+Tant que le terminal reste ouvert, ça écoute. Tu peux fermer l'onglet du
+navigateur, c'est le worker qui capte, pas la page.
+
+---
+
+## Où sont tes données
+
+Tout dans `worker-telegram/data/` :
+
+```
+data/db.json     annonces, décisions, favoris, filtres
+data/photos/     photos téléchargées depuis Telegram
 ```
 
-Le worker relit la liste des salons et les filtres toutes les 60 secondes :
-ajouter un salon depuis l'app ne demande pas de le redémarrer.
+Sauvegarder ton travail = copier ce dossier. Repartir de zéro = le supprimer.
+Rien ne sort de ta machine.
 
-## En production
+`.env` contient ta session Telegram : **elle vaut ton mot de passe**. Ne la
+partage pas, ne la commite pas (`.gitignore` s'en charge déjà).
 
-Le worker doit tourner en permanence, sinon les annonces publiées pendant son
-absence ne sont jamais vues — `npm run backfill` les rattrape, mais seulement
-sur les `BACKFILL_LIMIT` derniers messages. Un service systemd sur un petit VPS
-suffit :
+---
+
+## Ce qu'il faut savoir avant de compter dessus
+
+**Pourquoi un compte utilisateur et non un bot.** Un bot Telegram ne peut lire
+un salon que s'il en est membre, donc si tu peux l'y ajouter. Sur une
+marketplace tierce où tu n'es qu'un membre parmi d'autres, c'est impossible. Le
+worker se connecte donc via MTProto avec **ton compte** : il voit exactement ce
+que tu vois, rien de plus, et n'écrit jamais.
+
+**Le risque, sans détour.** Telegram tolère mal les comptes automatisés qui
+*postent*. Celui-ci ne fait que lire, ce qui est le régime le moins risqué — pas
+un régime sans risque. Utilise un compte dédié plutôt que ton compte principal.
+
+**Si le worker ne tourne pas, rien n'arrive.** C'est un service, pas une
+fonctionnalité de l'app. Les annonces publiées pendant qu'il est éteint se
+rattrapent avec **Rattraper**, mais seulement sur les `BACKFILL_LIMIT` derniers
+messages (200 par défaut). Pour capter 24/7 sans laisser ton PC allumé, il faut
+un petit VPS — voir plus bas.
+
+**Données personnelles.** Les annonces contiennent des photos, un âge, une
+nationalité de personnes réelles. En UE, tu es responsable de traitement :
+conserve ce qui te sert, supprime le reste. Effacer une annonce et tout ce qui
+s'y rattache = retirer sa ligne de `data/db.json` et son dossier de photos.
+
+**Ce que le système ne fait pas.** Pas de contact automatique — l'intermédiaire
+est affiché, tu écris à la main (automatiser les messages est le meilleur moyen
+de faire bannir le compte). Pas de vérification d'identité ni d'âge : les champs
+sont ceux du vendeur, le filtre `min_age` porte sur du déclaratif.
+
+---
+
+## Quand un salon n'est pas lu correctement
+
+Chaque marketplace écrit ses libellés à sa façon. Si un salon remplit peu de
+champs, ouvre l'onglet **Coller une annonce**, colle un de ses messages, et
+regarde ce que le lecteur a compris : ce qui apparaît **en jaune** est un
+libellé qu'il ne connaît pas.
+
+Ajoute-le dans `aliases` du champ correspondant, dans
+`shared/talents/fields.mjs` :
+
+```js
+{ key: 'origin', type: 'country', label: 'Origine',
+  aliases: ['origin', 'country', 'pais', /* ← ajoute le tien ici */] },
+```
+
+Puis un cas dans `test/parse.test.mjs`, et `npm test` : le format est couvert
+pour de bon. Le lecteur est partagé avec l'app ScaleFlow — une correction ici
+profite aux deux.
+
+---
+
+## Le laisser tourner en continu (VPS)
+
+Le mode local suffit tant que tu tries à des heures de bureau. Pour ne rien
+manquer, un petit VPS et un service systemd :
 
 ```ini
 [Unit]
-Description=ScaleFlow — ingestion Telegram
+Description=Talent Deck — ingestion Telegram
 After=network-online.target
 
 [Service]
 WorkingDirectory=/opt/scaleflow/worker-telegram
-ExecStart=/usr/bin/node src/index.mjs
+ExecStart=/usr/bin/node src/standalone.mjs
 Restart=always
 RestartSec=10
 User=scaleflow
@@ -78,17 +151,38 @@ User=scaleflow
 WantedBy=multi-user.target
 ```
 
-Une seule instance par organisation. Deux workers sur les mêmes salons ne
-créeront pas de doublons (la contrainte d'unicité sur `dedupe_key` l'interdit),
-mais téléchargeront les photos deux fois pour rien.
+L'interface n'a **aucune authentification** : ne l'expose pas sur l'internet
+public. Passe par un tunnel SSH (`ssh -L 8787:localhost:8787 ton-vps`), ou mets
+un reverse proxy avec mot de passe devant.
 
-## Ajouter un format de salon
+Une seule instance par jeu de salons. Deux workers ne créeront pas de doublons
+(la clé de dédoublonnage l'interdit) mais téléchargeront les photos deux fois.
 
-Chaque marketplace écrit ses libellés à sa façon. Quand un salon remplit
-l'onglet « messages mal lus » de l'app, ouvre un de ces messages, repère les
-libellés et ajoute-les dans `aliases` du champ correspondant, dans
-`shared/talents/fields.mjs`. Ajoute ensuite un cas à
-`test/parse.test.mjs` et lance `npm test` : le format est couvert pour de bon.
+---
 
-Le parseur est partagé avec l'app (`shared/talents/`) — une correction ici
-profite aux deux, sans risque de divergence.
+## Mode Supabase
+
+Quand plusieurs personnes doivent voir le même parc :
+
+1. Joue `supabase/talents.sql` dans le SQL editor Supabase.
+2. Renseigne `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (Settings → API →
+   `service_role`) et `ORG_ID` dans `.env`.
+3. `npm run start:supabase`
+
+L'interface est alors la page **Talents** de l'app ScaleFlow, pas celle-ci. La
+clé service_role contourne les RLS : elle ne sort jamais du serveur.
+
+---
+
+## Les commandes
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `npm run start:demo` | interface seule, annonces d'exemple, zéro installation |
+| `npm run login` | connecte ton compte Telegram, écrit `.env` |
+| `npm start` | écoute les salons + sert <http://localhost:8787> |
+| `npm run backfill` | rattrape l'historique de tous les salons, puis écoute |
+| `npm run start:supabase` | variante multi-postes |
+| `npm test` | tests du lecteur d'annonces |
+
+Port différent : `PORT=9000 npm start`.

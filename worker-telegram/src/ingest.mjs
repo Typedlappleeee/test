@@ -1,0 +1,96 @@
+// Ingestion : de messages Telegram bruts à une annonce enregistrée.
+//
+// Le point délicat, et la raison d'être de ce module : dans Telegram une
+// annonce à plusieurs photos arrive en PLUSIEURS messages qui partagent un
+// `groupedId`, et le texte n'est que sur l'un d'eux. Traiter message par
+// message donnerait une annonce sans photos suivie de trois photos sans
+// annonce. On bufferise donc par album et on ne traite qu'après un silence.
+//
+// Le stockage est injecté (`store`) : Supabase ou disque local, l'ingestion
+// est la même.
+import { createHash } from 'node:crypto'
+import { parseListing, dedupeKey } from '../../shared/talents/parse.mjs'
+
+export const ALBUM_WAIT_MS = 2500
+export const MAX_PHOTOS = 4
+
+export function createIngestor({ client, store, log = console.log }) {
+  const buffers = new Map()
+
+  async function downloadPhotos(messages) {
+    const out = []
+    for (const m of messages) {
+      if (out.length >= MAX_PHOTOS) break
+      if (!m.photo) continue
+      try {
+        const buffer = await client.downloadMedia(m, { thumb: -1 })
+        if (!buffer?.length) continue
+        out.push({ buffer, hash: createHash('sha1').update(buffer).digest('hex').slice(0, 16) })
+      } catch (e) { log('  photo non téléchargée :', e.message) }
+    }
+    return out
+  }
+
+  /** Un groupe de messages = une annonce. Retourne 'inserted' | 'duplicate' | 'skipped'. */
+  async function handleGroup(salon, messages) {
+    const text = messages.map(m => m.message || m.text || '').find(t => t && t.trim().length > 20)
+    if (!text) return 'skipped'
+
+    const parsed = parseListing(text)
+    const photos = await downloadPhotos(messages)
+    parsed.dedupeKey = dedupeKey(parsed.fields, parsed.raw, photos.map(p => p.hash))
+
+    const first = messages[0]
+    const stored = photos.length
+      ? await store.savePhotos(photos, parsed.dedupeKey.replace(/[^a-z0-9]/gi, ''))
+      : []
+
+    const res = await store.saveListing({
+      salonId: salon.id,
+      salonTitle: salon.title,
+      msgId: Number(first.id),
+      groupedId: first.groupedId ?? null,
+      parsed,
+      photos: stored,
+      postedAt: new Date((Number(first.date) || Date.now() / 1000) * 1000).toISOString(),
+      prefs: await store.prefs(),
+    })
+
+    const who = parsed.fields.listing_id ? '#' + parsed.fields.listing_id : (parsed.fields.origin ?? '?')
+    log(`  ${res === 'inserted' ? '✓' : '·'} ${res.padEnd(9)} ${who} · ${stored.length} photo(s) · lu à ${Math.round(parsed.confidence * 100)} %`)
+    return res
+  }
+
+  /** Met un message en file ; l'album est traité après ALBUM_WAIT_MS de silence. */
+  function queue(salon, message) {
+    const key = `${salon.id}:${message.groupedId ?? 'm' + message.id}`
+    const entry = buffers.get(key) ?? { messages: [], timer: null }
+    entry.messages.push(message)
+    clearTimeout(entry.timer)
+    entry.timer = setTimeout(async () => {
+      buffers.delete(key)
+      try { await handleGroup(salon, entry.messages.sort((a, b) => a.id - b.id)) }
+      catch (e) { log('  erreur :', e.message); await store.salonError(salon.id, e.message) }
+    }, ALBUM_WAIT_MS)
+    buffers.set(key, entry)
+  }
+
+  /** Rattrape l'historique d'un salon, du plus ancien au plus récent. */
+  async function backfill(salon, entity, limit) {
+    const msgs = await client.getMessages(entity, { limit })
+    const groups = new Map()
+    for (const m of [...msgs].reverse()) {
+      const k = m.groupedId ? String(m.groupedId) : 'm' + m.id
+      groups.set(k, [...(groups.get(k) ?? []), m])
+    }
+    let inserted = 0, duplicate = 0
+    for (const g of groups.values()) {
+      const r = await handleGroup(salon, g)
+      if (r === 'inserted') inserted++
+      else if (r === 'duplicate') duplicate++
+    }
+    return { inserted, duplicate, scanned: groups.size }
+  }
+
+  return { queue, backfill, handleGroup }
+}

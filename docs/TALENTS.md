@@ -21,29 +21,38 @@ questions indépendantes. Les traiter séparément est ce qui rend le reste simp
 
 ## 2. L'architecture
 
-```
-   Salons Telegram
-        │  MTProto, compte utilisateur, lecture seule
-        ▼
-┌────────────────────┐
-│  worker-telegram/  │  Node, sur ton VPS. Détient les secrets Telegram.
-│                    │  Regroupe les albums, parse, télécharge les photos.
-└─────────┬──────────┘
-          │  clé service_role
-          ▼
-┌────────────────────┐
-│     Supabase       │  talent_salons · talent_listings · talent_decisions
-│                    │  talent_favorites · talent_prefs · bucket `talents`
-└─────────┬──────────┘
-          │  RLS par organisation, session du user
-          ▼
-┌────────────────────┐
-│  App ScaleFlow     │  Page Talents : deck, favoris, salons, filtres.
-│  src/pages/Talents │  Ne connaît pas Telegram.
-└────────────────────┘
+Le worker est le même dans les deux modes ; seul le stockage change.
 
-     shared/talents/  ← parseur + scoring, importés par le worker ET par l'app
 ```
+                     Salons Telegram
+                          │  MTProto, compte utilisateur, lecture seule
+                          ▼
+              ┌────────────────────────┐
+              │    worker-telegram/    │  Détient les secrets Telegram.
+              │  regroupe les albums,  │  Ne tourne jamais dans l'app livrée.
+              │  lit, télécharge       │
+              └───────┬────────┬───────┘
+                      │        │
+        mode local ◄──┘        └──► mode équipe
+                      │        │
+        ┌─────────────▼──┐  ┌──▼──────────────┐
+        │  data/db.json  │  │    Supabase     │  RLS par organisation
+        │  data/photos/  │  │  + bucket photo │
+        └─────────┬──────┘  └────────┬────────┘
+                  │                  │
+        ┌─────────▼──────┐  ┌────────▼────────┐
+        │ localhost:8787 │  │  App ScaleFlow  │
+        │ src/ui/        │  │ pages/Talents   │
+        └────────────────┘  └─────────────────┘
+
+     shared/talents/  ← lecteur + scoring, importés par TOUS les chemins
+```
+
+**Le mode local** (`npm start` dans `worker-telegram/`) est un seul processus :
+il tient la connexion Telegram, écrit dans `data/`, et sert son interface sur
+`localhost:8787`. Aucune base à provisionner, aucun compte à créer. C'est par là
+qu'il faut commencer ; Supabase ne devient utile que quand plusieurs personnes
+doivent voir le même parc.
 
 **Le point qui compte** : l'app ne parle jamais à Telegram. Les identifiants
 Telegram donnent un accès complet au compte ; les mettre dans une application
@@ -186,28 +195,39 @@ le suivi utile ici tient dans un statut et deux lignes de contexte.
 
 ## 7. Mise en service
 
-1. **Base** — joue `supabase/talents.sql` dans le SQL editor Supabase. Il crée
-   les cinq tables, les RLS par organisation, les triggers et le bucket de
-   photos. Il est idempotent.
-2. **Worker** — suis `worker-telegram/README.md` (api_id/api_hash, `npm run
-   login`, clé service_role, ORG_ID).
-3. **Salons** — dans l'app, Talents → Salons → Ajouter, avec le `@username` ou
-   l'identifiant numérique que `npm run login` a listé.
-4. **Rattrapage** — `npm run backfill` dans `worker-telegram/` : il ingère
-   l'historique récent, puis reste en écoute.
-5. **Filtres** — règle ton budget et tes exclusions dans l'onglet Filtres avant
-   le premier backfill, sinon tout arrive dans le deck.
+**Mode local — trois commandes, rien à provisionner :**
+
+```bash
+cd worker-telegram
+npm install && npm run login && npm start
+```
+
+Puis onglet **Salons** sur <http://localhost:8787> : tes salons Telegram y sont
+listés, tu cliques *Écouter* sur ceux qui t'intéressent. Tout le détail est dans
+`worker-telegram/README.md`.
+
+**Mode équipe (Supabase)**, quand plusieurs personnes doivent partager le parc :
+
+1. Joue `supabase/talents.sql` dans le SQL editor — cinq tables, RLS par
+   organisation, triggers, bucket de photos. Idempotent.
+2. Renseigne `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` et `ORG_ID` dans `.env`.
+3. `npm run start:supabase`. L'interface est alors la page Talents de l'app.
+
+Dans les deux cas : règle tes filtres **avant** le premier rattrapage, sinon
+tout arrive dans le deck. En mode local, changer un filtre reclasse aussi les
+annonces déjà captées ; en mode Supabase, seules les nouvelles sont concernées.
 
 ### Voir l'écran sans rien brancher
 
 ```bash
-npm run preview:talents
+cd worker-telegram && npm run start:demo    # http://localhost:8787
+npm run preview:talents                     # la version React de l'app
 ```
 
-Ouvre la page avec 48 annonces fabriquées qui passent par le **vrai** parseur, les
-vrais filtres et le vrai scoring. C'est aussi le moyen le plus rapide d'éprouver
-le parseur sur un nouveau format : colle un message réel dans `preview/talents.tsx`
-et recharge.
+Les deux chargent des annonces fabriquées qui passent par le **vrai** lecteur,
+les vrais filtres et le vrai scoring. L'onglet « Coller une annonce » du mode
+démo est le moyen le plus rapide d'éprouver le lecteur sur un format de salon
+que tu n'as pas encore couvert.
 
 ---
 
@@ -224,9 +244,14 @@ et recharge.
   bannir le compte.
 - **Pas de vérification d'identité ni d'âge.** Les champs sont ceux du vendeur.
   Le filtre `min_age` porte sur du texte déclaratif, il ne prouve rien.
-- **Pas de temps réel dans l'app.** La page charge à l'ouverture ; le bouton
-  Rafraîchir relit. Brancher Supabase Realtime sur `talent_listings` serait
-  quelques lignes le jour où ça manque.
+- **Pas de temps réel dans l'app ScaleFlow.** La page charge à l'ouverture ; le
+  bouton Rafraîchir relit. (L'interface locale, elle, se met à jour toute seule :
+  le worker lui pousse un événement à chaque annonce.) Brancher Supabase Realtime
+  sur `talent_listings` serait quelques lignes le jour où ça manque.
+
+- **L'interface locale n'a pas d'authentification.** Elle est prévue pour
+  `localhost`. Sur un serveur, passe par un tunnel SSH ou un reverse proxy avec
+  mot de passe — ne l'expose pas telle quelle.
 
 ---
 
@@ -238,8 +263,13 @@ et recharge.
 | `shared/talents/parse.mjs` | Parseur + dédoublonnage |
 | `shared/talents/score.mjs` | Filtres durs + score appris |
 | `supabase/talents.sql` | Tables, RLS, triggers, bucket photos |
-| `worker-telegram/src/index.mjs` | Écoute Telegram, regroupe les albums |
-| `worker-telegram/src/store.mjs` | Écriture Supabase, upload des photos |
+| `worker-telegram/src/standalone.mjs` | Mode local : Telegram + serveur + interface |
+| `worker-telegram/src/ui/index.html` | L'interface locale (localhost:8787) |
+| `worker-telegram/src/ingest.mjs` | Regroupement des albums, photos, écriture |
+| `worker-telegram/src/telegram.mjs` | Connexion MTProto, résolution des salons |
+| `worker-telegram/src/store-local.mjs` | Stockage disque (`data/`) |
+| `worker-telegram/src/store-supabase.mjs` | Stockage Supabase |
+| `worker-telegram/src/index.mjs` | Mode équipe : Telegram → Supabase |
 | `worker-telegram/test/parse.test.mjs` | Tests du parseur (`npm test`) |
 | `src/lib/talents.ts` | Hook `useTalents`, types, formatage |
 | `src/pages/Talents.tsx` | Les quatre onglets |

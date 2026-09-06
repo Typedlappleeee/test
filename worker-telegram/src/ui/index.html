@@ -1,0 +1,1453 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talent Deck</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%238B5CF6'/%3E%3Cpath d='M9 21V11h3.4l3.6 6 3.6-6H23v10h-2.6v-5.6L17.2 21h-2.4l-3.2-5.6V21z' fill='%230B0A11'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+/* ── Jetons ──────────────────────────────────────────────────────────────── */
+:root {
+  --bg:        #F5F4F8;
+  --surface:   #FFFFFF;
+  --surface-2: #EEEDF3;
+  --edge:      #DEDCE7;
+  --edge-soft: #E9E7F0;
+  --ink:       #17161F;
+  --ink-2:     #4C495C;
+  --ink-3:     #7B7790;
+  --accent:    #6D3EE8;
+  --accent-2:  #8B5CF6;
+  --accent-ink:#FFFFFF;
+  --accent-wash: rgba(109,62,232,.08);
+  --match:     #12855C;
+  --pass:      #C4383C;
+  --later:     #9A6407;
+  --match-wash: rgba(18,133,92,.09);
+  --pass-wash:  rgba(196,56,60,.09);
+  --later-wash: rgba(154,100,7,.10);
+  --shadow:    0 18px 40px -22px rgba(23,22,31,.35);
+  --stripe:    rgba(23,22,31,.045);
+
+  --font-display: 'Bricolage Grotesque', 'Public Sans', system-ui, sans-serif;
+  --font-body:    'Public Sans', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #0B0A11;
+    --surface:   #17161F;
+    --surface-2: #1E1C29;
+    --edge:      #2B2839;
+    --edge-soft: #221F2E;
+    --ink:       #E7E5F0;
+    --ink-2:     #A8A4BC;
+    --ink-3:     #75718A;
+    --accent:    #8B5CF6;
+    --accent-2:  #A78BFA;
+    --accent-ink:#0B0A11;
+    --accent-wash: rgba(139,92,246,.12);
+    --match:     #34D399;
+    --pass:      #F87171;
+    --later:     #FBBF24;
+    --match-wash: rgba(52,211,153,.11);
+    --pass-wash:  rgba(248,113,113,.11);
+    --later-wash: rgba(251,191,36,.11);
+    --shadow:    0 24px 56px -26px rgba(0,0,0,.85);
+    --stripe:    rgba(255,255,255,.035);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:        #0B0A11;
+  --surface:   #17161F;
+  --surface-2: #1E1C29;
+  --edge:      #2B2839;
+  --edge-soft: #221F2E;
+  --ink:       #E7E5F0;
+  --ink-2:     #A8A4BC;
+  --ink-3:     #75718A;
+  --accent:    #8B5CF6;
+  --accent-2:  #A78BFA;
+  --accent-ink:#0B0A11;
+  --accent-wash: rgba(139,92,246,.12);
+  --match:     #34D399;
+  --pass:      #F87171;
+  --later:     #FBBF24;
+  --match-wash: rgba(52,211,153,.11);
+  --pass-wash:  rgba(248,113,113,.11);
+  --later-wash: rgba(251,191,36,.11);
+  --shadow:    0 24px 56px -26px rgba(0,0,0,.85);
+  --stripe:    rgba(255,255,255,.035);
+}
+
+* { box-sizing: border-box; }
+img { max-width: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 22px 20px 64px; }
+
+/* ── En-tête ─────────────────────────────────────────────────────────────── */
+.top { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 18px; }
+h1 {
+  margin: 0; font-family: var(--font-display); font-size: clamp(26px, 3.4vw, 36px);
+  font-weight: 800; letter-spacing: -.035em; line-height: 1; text-wrap: balance;
+}
+.lede { margin: 8px 0 0; max-width: 62ch; color: var(--ink-2); font-size: 13.5px; }
+.top-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+
+.counts { display: flex; gap: 0; margin: 18px 0 0; border: 1px solid var(--edge); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.count { flex: 1; padding: 11px 14px; border-right: 1px solid var(--edge-soft); }
+.count:last-child { border-right: none; }
+.count b {
+  display: block; font-family: var(--font-display); font-size: 22px; font-weight: 700;
+  letter-spacing: -.03em; line-height: 1.1; font-variant-numeric: tabular-nums;
+}
+.count span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.count.is-match b { color: var(--match); }
+.count.is-off b { color: var(--ink-3); }
+
+/* ── Onglets ─────────────────────────────────────────────────────────────── */
+.tabs { display: flex; gap: 2px; margin: 20px 0 20px; border-bottom: 1px solid var(--edge); flex-wrap: wrap; }
+.tab {
+  position: relative; padding: 9px 14px; border: none; background: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--ink-3); border-radius: 8px 8px 0 0;
+}
+.tab:hover { color: var(--ink-2); background: var(--surface-2); }
+.tab[aria-selected="true"] { color: var(--ink); }
+.tab[aria-selected="true"]::after {
+  content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px;
+  background: var(--accent); border-radius: 2px;
+}
+.tab .n { margin-left: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.tab[aria-selected="true"] .n { color: var(--accent-2); }
+
+/* ── Grille principale ───────────────────────────────────────────────────── */
+.split { display: grid; grid-template-columns: 388px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+
+/* ── Carte du deck ───────────────────────────────────────────────────────── */
+.stage { position: relative; height: 596px; }
+.card {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--edge); border-radius: 18px;
+  overflow: hidden; box-shadow: var(--shadow); touch-action: none; user-select: none;
+  cursor: grab; will-change: transform;
+}
+.card.ghost { box-shadow: none; pointer-events: none; }
+.card.dragging { cursor: grabbing; transition: none; }
+.card.settle { transition: transform .16s cubic-bezier(.4,0,.2,1), opacity .16s ease; }
+
+/* Vignette : dégradé déterministe dérivé de la référence de l'annonce.
+   Aucune photo réelle n'est embarquée — la vraie app affiche celles du salon. */
+.thumb { position: relative; height: 128px; flex-shrink: 0; display: flex; align-items: flex-end; padding: 12px 14px; }
+.thumb::after {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(112deg, transparent 0 7px, var(--stripe) 7px 14px);
+}
+.thumb-meta { position: relative; z-index: 1; display: flex; align-items: center; gap: 8px; width: 100%; }
+.thumb-ref {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 3px 7px;
+  border-radius: 5px; background: rgba(11,10,17,.62); color: #EFEDF7; backdrop-filter: blur(3px);
+}
+.thumb-price {
+  margin-left: auto; font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  padding: 4px 9px; border-radius: 6px; background: var(--accent); color: var(--accent-ink);
+}
+.photo-note { position: relative; z-index: 1; font-size: 10.5px; color: rgba(239,237,247,.72); }
+
+.card-body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 12px; }
+.card-head { display: flex; align-items: flex-start; gap: 10px; }
+.card-name { font-family: var(--font-display); font-size: 19px; font-weight: 700; letter-spacing: -.025em; line-height: 1.15; }
+.card-sub { margin-top: 2px; font-size: 11.5px; color: var(--ink-3); }
+
+.affinity {
+  flex-shrink: 0; text-align: center; padding: 5px 10px; border-radius: 10px;
+  border: 1px solid currentColor; background: var(--surface-2);
+}
+.affinity b { display: block; font-family: var(--font-display); font-size: 17px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.affinity span { display: block; font-size: 8.5px; font-weight: 700; letter-spacing: .09em; color: var(--ink-3); }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.stat { padding: 8px 10px; border-radius: 9px; background: var(--surface-2); }
+.stat span { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+.stat b { display: block; margin-top: 2px; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat.lead b { font-size: 16px; color: var(--accent-2); font-family: var(--font-mono); font-weight: 700; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+  border: 1px solid var(--edge); background: var(--surface-2); color: var(--ink-2);
+}
+.chip.ok   { color: var(--match); border-color: var(--match); background: var(--match-wash); }
+.chip.warn { color: var(--later); border-color: var(--later); background: var(--later-wash); }
+.chip.acc  { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+
+.rows { display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+.row { display: flex; gap: 10px; }
+.row dt { flex: 0 0 88px; color: var(--ink-3); }
+.row dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+.row dd.mono { font-family: var(--font-mono); font-size: 11.5px; }
+
+.verdict {
+  position: absolute; top: 20px; padding: 6px 13px; border-radius: 9px; pointer-events: none;
+  font-family: var(--font-display); font-size: 15px; font-weight: 800; letter-spacing: .05em;
+  border: 2px solid currentColor; background: var(--surface); opacity: 0;
+}
+.verdict.on { opacity: 1; }
+
+.actions { display: flex; gap: 7px; padding: 11px 14px; border-top: 1px solid var(--edge-soft); }
+.act {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 38px; padding: 0 10px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700;
+  border: 1px solid currentColor; background: var(--surface-2);
+}
+.act:hover { filter: brightness(1.08); }
+.act.pass  { color: var(--pass);  background: var(--pass-wash); }
+.act.later { color: var(--later); background: var(--later-wash); flex: 0 0 auto; }
+.act.match { color: var(--match); background: var(--match-wash); }
+.act kbd { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; opacity: .7; }
+
+.hint { margin-top: 10px; text-align: center; font-size: 11.5px; color: var(--ink-3); }
+kbd.key {
+  display: inline-block; padding: 1px 5px; margin: 0 1px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: 10.5px;
+  background: var(--surface-2); border: 1px solid var(--edge); color: var(--ink-2);
+}
+
+/* ── Panneaux ────────────────────────────────────────────────────────────── */
+.panel { background: var(--surface); border: 1px solid var(--edge); border-radius: 14px; overflow: hidden; }
+.panel + .panel { margin-top: 14px; }
+.panel-head { display: flex; align-items: flex-start; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--edge-soft); }
+.panel-head h2 { margin: 0; font-family: var(--font-display); font-size: 14.5px; font-weight: 700; letter-spacing: -.015em; }
+.panel-head p { margin: 3px 0 0; font-size: 12px; color: var(--ink-3); max-width: 62ch; }
+.panel-head .right { margin-left: auto; display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+.panel-body { padding: 14px 16px; }
+.panel-body p { margin: 0 0 9px; font-size: 12.5px; color: var(--ink-2); max-width: 64ch; }
+.panel-body p:last-child { margin-bottom: 0; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+  border-radius: 8px; cursor: pointer; font-size: 12.5px; font-weight: 600;
+  border: 1px solid var(--edge); background: var(--surface-2); color: var(--ink-2);
+}
+.btn:hover { border-color: var(--ink-3); color: var(--ink); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.1); color: var(--accent-ink); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.meter { height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin-bottom: 10px; }
+.meter i { display: block; height: 100%; background: var(--accent); transition: width .3s ease; }
+.meter.done i { background: var(--match); }
+
+.tag { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--edge); color: var(--ink-3); }
+.tag.live { color: var(--match); border-color: var(--match); background: var(--match-wash); }
+
+/* Traits appris */
+.trait { display: flex; align-items: center; gap: 10px; font-size: 12.5px; padding: 3px 0; }
+.trait span:first-child { flex: 1; color: var(--ink-2); }
+.trait .bar { position: relative; width: 116px; height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; flex-shrink: 0; }
+.trait .bar i { position: absolute; top: 0; bottom: 0; left: 50%; }
+.trait .w { width: 42px; text-align: right; font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* ── Favoris ─────────────────────────────────────────────────────────────── */
+.stage-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.sf { padding: 5px 11px; border-radius: 8px; border: 1px solid var(--edge); background: var(--surface); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--ink-3); }
+.sf[aria-pressed="true"] { color: var(--ink); border-color: var(--ink-3); background: var(--surface-2); }
+
+.favs { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 13px; }
+.fav { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--edge); border-radius: 12px; overflow: hidden; }
+.fav .fav-thumb { height: 62px; flex-shrink: 0; }
+.fav-body { padding: 11px 13px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.fav-name { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: -.02em; }
+.fav-line { display: flex; gap: 12px; font-size: 12px; color: var(--ink-3); }
+.fav-line b { font-family: var(--font-mono); font-weight: 700; color: var(--ink-2); }
+.fav-mm { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); }
+.fav select { margin-top: auto; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--edge); background: var(--surface-2); font-size: 12px; font-weight: 600; cursor: pointer; }
+.fav textarea {
+  min-height: 40px; resize: vertical; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--edge); background: var(--surface-2); font-size: 11.5px; line-height: 1.5;
+}
+.fav .drop { align-self: flex-start; padding: 0; border: none; background: none; cursor: pointer; font-size: 11px; color: var(--ink-3); text-decoration: underline; }
+.fav .drop:hover { color: var(--pass); }
+
+/* ── Formulaires ─────────────────────────────────────────────────────────── */
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .fields { grid-template-columns: 1fr; } }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-weight: 700; color: var(--ink-2); }
+label.f input, label.f textarea {
+  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--edge);
+  background: var(--surface-2); font-size: 13px; font-weight: 400;
+}
+label.f .h { font-weight: 400; font-size: 11px; color: var(--ink-3); }
+label.f.wide { grid-column: 1 / -1; }
+
+.switch { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--edge); background: var(--surface); cursor: pointer; text-align: left; width: 100%; font-size: 12.5px; color: var(--ink-2); }
+.switch[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-wash); color: var(--ink); }
+.switch .knob { flex-shrink: 0; width: 30px; height: 17px; border-radius: 999px; padding: 2px; background: var(--edge); }
+.switch[aria-pressed="true"] .knob { background: var(--accent); }
+.switch .knob i { display: block; width: 13px; height: 13px; border-radius: 999px; background: var(--surface); transition: transform .15s ease; }
+.switch[aria-pressed="true"] .knob i { transform: translateX(13px); }
+
+/* ── Coller une annonce ──────────────────────────────────────────────────── */
+.paste { width: 100%; min-height: 260px; resize: vertical; padding: 12px 13px; border-radius: 10px; border: 1px solid var(--edge); background: var(--surface-2); font-family: var(--font-mono); font-size: 12px; line-height: 1.65; }
+.parsed { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.pf { padding: 7px 9px; border-radius: 8px; background: var(--surface-2); border-left: 2px solid var(--accent); }
+.pf span { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.pf b { display: block; margin-top: 1px; font-size: 12.5px; font-weight: 600; overflow-wrap: anywhere; }
+.pf.unknown { border-left-color: var(--later); }
+.note { padding: 9px 12px; border-radius: 9px; font-size: 12px; }
+.note.ok  { color: var(--match); background: var(--match-wash); border: 1px solid var(--match); }
+.note.bad { color: var(--later); background: var(--later-wash); border: 1px solid var(--later); }
+
+.filtered-row { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-top: 1px solid var(--edge-soft); font-size: 12.5px; }
+.filtered-row .why { margin-left: auto; color: var(--pass); font-size: 11.5px; text-align: right; }
+.filtered-row .pr { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); flex-shrink: 0; }
+
+.empty { padding: 46px 22px; text-align: center; }
+.empty h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+.empty p { margin: 0 auto; max-width: 38ch; font-size: 12.5px; color: var(--ink-3); }
+
+.demo-banner {
+  display: flex; align-items: center; gap: 10px; padding: 9px 14px; margin-bottom: 16px;
+  border-radius: 10px; font-size: 12.5px; color: var(--ink-2);
+  background: var(--accent-wash); border: 1px solid var(--accent);
+}
+.demo-banner b { color: var(--ink); }
+
+footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--edge); font-size: 12px; color: var(--ink-3); }
+footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px; border-radius: 4px; background: var(--surface-2); }
+.hidden { display: none !important; }
+
+/* Bandeau d'état de la connexion Telegram */
+.status {
+  display: flex; align-items: center; gap: 9px; padding: 8px 13px; margin-bottom: 16px;
+  border-radius: 10px; font-size: 12.5px; border: 1px solid var(--edge); background: var(--surface);
+}
+.status .dot { width: 7px; height: 7px; border-radius: 999px; flex-shrink: 0; background: var(--ink-3); }
+.status.live .dot { background: var(--match); animation: pulse 2.2s ease-in-out infinite; }
+.status.live { border-color: var(--match); background: var(--match-wash); }
+.status.off { border-color: var(--later); background: var(--later-wash); }
+.status b { font-weight: 700; }
+.status .grow { flex: 1; }
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+/* Photos réelles de l'annonce */
+.shots { position: relative; height: 232px; flex-shrink: 0; background: var(--surface-2); overflow: hidden; }
+.shots img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shots .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,10,17,.45) 0 22%, transparent 42%, rgba(11,10,17,.82)); }
+.shots .bars { position: absolute; top: 8px; left: 10px; right: 10px; display: flex; gap: 3px; }
+.shots .bars i { flex: 1; height: 2.5px; border-radius: 2px; background: rgba(255,255,255,.28); }
+.shots .bars i.on { background: #F2F0FA; }
+.shots .nav { position: absolute; top: 16px; bottom: 0; width: 36%; border: none; background: none; cursor: pointer; }
+.shots .nav.prev { left: 0; } .shots .nav.next { right: 0; }
+.shots .meta { position: absolute; left: 12px; right: 12px; bottom: 11px; display: flex; align-items: center; gap: 8px; }
+
+/* Salons */
+.salon-row { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-top: 1px solid var(--edge-soft); }
+.salon-row .id { flex: 1; min-width: 0; }
+.salon-row .id b { display: block; font-size: 13.5px; font-weight: 700; }
+.salon-row .id span { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-top: 1px; }
+.salon-row .err { display: block; font-size: 11.5px; color: var(--pass); margin-top: 2px; }
+.salon-row .acts { display: flex; gap: 6px; flex-shrink: 0; }
+.dialogs { max-height: 460px; overflow-y: auto; }
+.dialog-row { display: flex; align-items: center; gap: 12px; padding: 9px 16px; border-top: 1px solid var(--edge-soft); }
+.dialog-row .id { flex: 1; min-width: 0; }
+.dialog-row .id b { font-size: 13px; font-weight: 600; }
+.dialog-row .id span { display: block; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); }
+.dialog-row .n { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.search { width: 100%; padding: 8px 11px; border-radius: 9px; border: 1px solid var(--edge); background: var(--surface-2); font-size: 13px; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Talent Deck</h1>
+      <p class="lede">Le worker écoute tes salons Telegram, télécharge les photos, lit chaque annonce champ par champ et écarte les doublons. Toi, tu tranches&nbsp;: match ou pass.</p>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="undo" disabled>↩ Annuler</button>
+      <button class="btn" id="reset" title="Efface tes décisions. Les annonces captées restent.">Tout re-trier</button>
+    </div>
+  </header>
+
+  <div class="status" id="status"><span class="dot"></span><span class="grow" id="status-text">Connexion…</span></div>
+
+  <div class="counts">
+    <div class="count"><b id="c-deck">0</b><span>À trier</span></div>
+    <div class="count is-match"><b id="c-fav">0</b><span>Favoris</span></div>
+    <div class="count is-off"><b id="c-filtered">0</b><span>Écartées auto</span></div>
+    <div class="count is-off"><b id="c-dupes">0</b><span>Doublons évités</span></div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-deck"    aria-selected="true"  aria-controls="p-deck">À trier <span class="n" id="n-deck">0</span></button>
+    <button class="tab" role="tab" id="tab-fav"     aria-selected="false" aria-controls="p-fav">Favoris <span class="n" id="n-fav">0</span></button>
+    <button class="tab" role="tab" id="tab-paste"   aria-selected="false" aria-controls="p-paste">Coller une annonce</button>
+    <button class="tab" role="tab" id="tab-salons"  aria-selected="false" aria-controls="p-salons">Salons <span class="n" id="n-salons">0</span></button>
+    <button class="tab" role="tab" id="tab-filters" aria-selected="false" aria-controls="p-filters">Filtres</button>
+  </div>
+
+  <!-- ── À trier ──────────────────────────────────────────────────────── -->
+  <section id="p-deck" role="tabpanel" aria-labelledby="tab-deck">
+    <div class="split">
+      <div>
+        <div class="stage" id="stage"></div>
+        <p class="hint">Glisse la carte, ou <kbd class="key">←</kbd> pass · <kbd class="key">→</kbd> match · <kbd class="key">↓</kbd> plus tard</p>
+      </div>
+
+      <div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Tri automatique</h2>
+              <p id="sort-sub">L’ordre du deck suit ce que tu retiens d’habitude — appris de tes propres swipes, pas de règles écrites à la main.</p>
+            </div>
+            <div class="right"><span class="tag" id="sort-tag">En apprentissage</span></div>
+          </div>
+          <div class="panel-body">
+            <div class="meter" id="meter"><i style="width:0%"></i></div>
+            <p>Le score n’écarte jamais une annonce&nbsp;: il remonte celles qui te ressemblent, et laisse les autres plus bas. Pour exclure pour de bon, ce sont les <b>Filtres</b>.</p>
+            <div id="traits" style="margin-top:12px"></div>
+          </div>
+        </div>
+
+        <div class="panel" id="filtered-panel">
+          <div class="panel-head">
+            <div>
+              <h2><span id="filtered-count">0</span> annonces écartées par tes filtres</h2>
+              <p>Elles n’entrent pas dans le deck. Vérifie ici que tes règles ne sont pas trop serrées.</p>
+            </div>
+            <div class="right"><button class="btn" id="toggle-filtered">Voir</button></div>
+          </div>
+          <div id="filtered-list" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Favoris ──────────────────────────────────────────────────────── -->
+  <section id="p-fav" role="tabpanel" aria-labelledby="tab-fav" class="hidden">
+    <div class="stage-filter" id="stage-filter"></div>
+    <div class="favs" id="favs"></div>
+  </section>
+
+  <!-- ── Coller ───────────────────────────────────────────────────────── -->
+  <section id="p-paste" role="tabpanel" aria-labelledby="tab-paste" class="hidden">
+    <div class="split" style="grid-template-columns: minmax(0,1fr) minmax(0,1fr)">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Colle un message de ton salon</h2>
+            <p>Copie une annonce depuis Telegram et colle-la ici. C’est le même lecteur que celui du worker&nbsp;: ce que tu vois à droite est ce qui arriverait en base.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <textarea class="paste" id="paste" spellcheck="false" placeholder="🌟 Model Listing 🌟&#10;&#10;📋 Listing ID #8260&#10;🎂 Age: 23&#10;🌍 Origin: Chile&#10;…"></textarea>
+          <div style="display:flex; gap:8px; margin-top:11px; flex-wrap:wrap">
+            <button class="btn primary" id="do-parse">Lire l’annonce</button>
+            <button class="btn" id="do-add" disabled>Ajouter au deck</button>
+            <button class="btn" id="do-sample">Charger un exemple</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Ce que le lecteur a compris</h2>
+            <p id="parse-sub">Chaque libellé reconnu devient un champ typé. Ce qui n’est pas reconnu est gardé en jaune&nbsp;— c’est ce qui te dit quel alias ajouter.</p>
+          </div>
+          <div class="right"><span class="tag" id="parse-tag">En attente</span></div>
+        </div>
+        <div class="panel-body" id="parse-out">
+          <p style="color:var(--ink-3)">Colle un message à gauche, puis <b>Lire l’annonce</b>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Salons ───────────────────────────────────────────────────────── -->
+  <section id="p-salons" role="tabpanel" aria-labelledby="tab-salons" class="hidden">
+    <div class="split" style="grid-template-columns: minmax(0,1fr) minmax(0,1fr)">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h2>Salons écoutés</h2><p>Tant que le worker tourne, chaque nouveau message de ces salons est lu et rangé automatiquement.</p></div>
+        </div>
+        <div id="salon-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div><h2>Tes salons Telegram</h2><p>Tout ce que ton compte voit. Clique <b>Écouter</b> sur les marketplaces qui t’intéressent.</p></div>
+          <div class="right"><button class="btn" id="reload-dialogs">Recharger</button></div>
+        </div>
+        <div class="panel-body" style="padding-bottom:10px"><input class="search" id="dialog-search" placeholder="Filtrer par nom…" autocomplete="off"></div>
+        <div class="dialogs" id="dialog-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Filtres ──────────────────────────────────────────────────────── -->
+  <section id="p-filters" role="tabpanel" aria-labelledby="tab-filters" class="hidden">
+    <div class="split" style="grid-template-columns: minmax(0,440px) minmax(0,1fr)">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Filtres durs</h2>
+            <p>Une annonce qui viole une de ces règles n’entre jamais dans le deck.</p>
+          </div>
+          <div class="right"><button class="btn primary" id="apply-filters">Appliquer</button></div>
+        </div>
+        <div class="panel-body">
+          <div class="fields">
+            <label class="f">Budget max (contrat)<input type="number" id="f-price" placeholder="1500" min="0"></label>
+            <label class="f">Anglais minimum<input type="number" id="f-en" placeholder="3" min="1" max="5"></label>
+            <label class="f">Âge minimum<input type="number" id="f-agemin" placeholder="18" min="18"></label>
+            <label class="f">Âge maximum<input type="number" id="f-agemax" placeholder="30" min="18"></label>
+            <label class="f">Heures / jour minimum<input type="number" id="f-hours" placeholder="4" min="0"></label>
+            <label class="f wide">Pays exclus<input type="text" id="f-countries" placeholder="Russie, Inde"><span class="h">Séparés par des virgules. Insensible à la casse et aux accents.</span></label>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:13px">
+            <button class="switch" id="s-of" aria-pressed="false"><span class="knob"><i></i></span>Exiger un compte OnlyFans existant</button>
+            <button class="switch" id="s-access" aria-pressed="false"><span class="knob"><i></i></span>Exiger l’accès aux comptes</button>
+            <button class="switch" id="s-agency" aria-pressed="false"><span class="knob"><i></i></span>Exclure celles déjà sous contrat en agence</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Filtres et score&nbsp;: deux choses différentes</h2></div></div>
+          <div class="panel-body">
+            <p><b>Les filtres retirent.</b> Tu les écris, ils sont explicites, et une annonce rejetée reste consultable avec sa raison dans l’onglet À trier.</p>
+            <p><b>Le score ordonne.</b> Il ne retire rien et change à chaque swipe. Une annonce peu affine reste dans le deck, simplement plus bas.</p>
+            <p>Mélanger les deux serait l’erreur&nbsp;: «&nbsp;je n’en veux pas&nbsp;» et «&nbsp;j’aime moins&nbsp;» ne se décident pas au même endroit.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Ce que ça donnerait sur ton parc</h2><p>Recalculé sur les annonces chargées dans cette page.</p></div></div>
+          <div class="panel-body" id="filter-preview"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Module <b>Talents</b> de ScaleFlow, en local. Annonces, photos et décisions vivent dans <code>worker-telegram/data/</code> sur cette machine&nbsp;— rien ne part ailleurs. Sauvegarder ton travail&nbsp;: copie ce dossier.
+    Ferme cette page quand tu veux&nbsp;; c’est le worker dans le terminal qui capte les annonces, pas le navigateur.
+  </footer>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   1. LECTEUR D'ANNONCES — identique à shared/talents/parse.mjs du dépôt.
+   ════════════════════════════════════════════════════════════════════════ */
+const FIELDS = [
+  { key:'listing_id', type:'text', label:'Réf. annonce', aliases:['listing id','listing','ref','reference','id','model id','contract id','codigo'] },
+  { key:'name', type:'text', label:'Nom', aliases:['name','model name','nombre','nom','alias','pseudo'] },
+  { key:'age', type:'int', label:'Âge', aliases:['age','edad','years old','anos'] },
+  { key:'origin', type:'country', label:'Origine', aliases:['origin','country','nationality','from','pais','origen','nacionalidad','pays','origine','location','based in'] },
+  { key:'salary', type:'money', label:'Salaire demandé', aliases:['salary range','salary','expected salary','salario','sueldo','salaire','pay','monthly','monthly pay','rate'] },
+  { key:'english_level', type:'int', label:'Niveau anglais', aliases:['english level','english','nivel de ingles','ingles','anglais','language level'] },
+  { key:'hours_per_day', type:'hours', label:'Heures / jour', aliases:['time per day','hours per day','hours','availability','horas por dia','disponibilite','work hours','time'] },
+  { key:'content_types', type:'list', label:'Type de contenu', aliases:['content type','content','content types','tipo de contenido','contenido','type de contenu','niche','limits'] },
+  { key:'device', type:'text', label:'Téléphone', aliases:['smartphone','phone','device','telefono','movil','telephone','camera'] },
+  { key:'account_access', type:'bool', label:'Accès comptes', aliases:['account access','gives access','access','acceso','acces au compte'] },
+  { key:'social_media', type:'text', label:'Réseaux', aliases:['social media','socials','redes sociales','reseaux','accounts'] },
+  { key:'reels', type:'bool', label:'TikTok / Reels', aliases:['tiktok/ig reels','tiktok ig reels','reels','tiktok','short form','tiktok reels'] },
+  { key:'onlyfans', type:'bool', label:'OnlyFans', aliases:['onlyfans','of','fansly','has onlyfans','plateforme'] },
+  { key:'payment', type:'list', label:'Paiement', aliases:['skrill','payment','payment method','payments','paypal','wise','crypto','metodo de pago','paiement'] },
+  { key:'with_agency', type:'bool', label:'Déjà en agence', aliases:['is currently working with an agency','currently working with an agency','working with an agency','with agency','agency','en agencia','deja en agence'] },
+  { key:'can_start', type:'text', label:'Disponible', aliases:['can start','start date','availability date','puede empezar','disponible','starts'] },
+  { key:'blocked_countries', type:'list', label:'Pays bloqués', aliases:['blocked countries','geoblock','geo block','blocked','paises bloqueados','pays bloques','restrictions'] },
+  { key:'additional_info', type:'text', label:'Infos', aliases:['additional info','additional information','info','notes','extra','informacion adicional','infos','description','details'] },
+  { key:'price', type:'money', label:'Prix du contrat', aliases:['price','contract price','precio','prix','cost','fee'] },
+  { key:'warranty', type:'int', label:'Garantie (j)', aliases:['warranty','guarantee','garantia','garantie','warranty days'] },
+  { key:'middleman', type:'handle', label:'Intermédiaire', aliases:['middleman','mm','escrow','intermediario','intermediaire','contact','seller','vendor'] },
+];
+const FIELD_BY_KEY = Object.fromEntries(FIELDS.map(f => [f.key, f]));
+const ALIAS_INDEX = new Map();
+for (const f of FIELDS) { ALIAS_INDEX.set(f.key.replace(/_/g,' '), f); for (const a of f.aliases) ALIAS_INDEX.set(a, f); }
+const SIGNAL_FIELDS = ['age','origin','price','salary','english_level','onlyfans','listing_id'];
+const SECTION_LABELS = ['details','additional info','additional information','informacion adicional','infos','notes'];
+
+function stripEmoji(s) {
+  return String(s)
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{20E3}\u{2190}-\u{21FF}]/gu, ' ')
+    .replace(/[ ​-‍⁠]/g, ' ');
+}
+function normLabel(s) {
+  return stripEmoji(s)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[?!*_~`"'’]/g, '')
+    .replace(/[^a-z0-9/ ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+const TRUE_WORDS  = new Set(['yes','y','true','oui','si','ok','available','disponible','have','has','1','active']);
+const FALSE_WORDS = new Set(['no','n','false','non','none','nope','aucun','never','0','nada']);
+const CURRENCIES = [[/\$|usd|dollars?/i,'USD'],[/€|eur|euros?/i,'EUR'],[/£|gbp|pounds?/i,'GBP']];
+
+function parseMoney(raw) {
+  const s = String(raw).trim();
+  let currency = null;
+  for (const [re, code] of CURRENCIES) if (re.test(s)) { currency = code; break; }
+  const m = s.match(/(\d[\d\s.,]*)\s*(k|K)?/);
+  let amount = null;
+  if (m) {
+    let n = m[1].replace(/\s/g,'');
+    const dec = n.match(/[.,](\d{1,2})$/);
+    if (dec) n = n.slice(0, -dec[0].length).replace(/[.,]/g,'') + '.' + dec[1];
+    else n = n.replace(/[.,]/g,'');
+    amount = Number(n);
+    if (m[2]) amount *= 1000;
+    if (!Number.isFinite(amount)) amount = null;
+  }
+  return { amount, currency, raw: s };
+}
+function parseHours(raw) {
+  const m = String(raw).toLowerCase().match(/(\d+(?:[.,]\d+)?)/);
+  const hours = m ? Number(m[1].replace(',','.')) : null;
+  return { hours: Number.isFinite(hours) ? hours : null, raw: String(raw).trim() };
+}
+function parseBool(raw) {
+  const w = normLabel(raw).split(' ')[0];
+  if (TRUE_WORDS.has(w)) return true;
+  if (FALSE_WORDS.has(w)) return false;
+  return null;
+}
+function parseList(raw) {
+  return String(raw).split(/[,;/]|\band\b|\bet\b|\by\b|\+/i)
+    .map(s => stripEmoji(s).trim()).filter(s => s.length > 0 && s.length < 60);
+}
+function coerce(field, raw) {
+  const v = String(raw).trim();
+  switch (field.type) {
+    case 'int': { const m = v.match(/\d+/); return m ? Number(m[0]) : null; }
+    case 'money': return parseMoney(v);
+    case 'bool': return parseBool(v);
+    case 'list': return parseList(v);
+    case 'hours': return parseHours(v);
+    case 'handle': { const m = v.match(/@[\w]{3,}/); return m ? m[0] : (v || null); }
+    case 'country': return stripEmoji(v).trim().replace(/\s+/g,' ') || null;
+    default: return stripEmoji(v).trim() || null;
+  }
+}
+
+function parseListing(text) {
+  const raw = String(text ?? '');
+  const fields = {}, unknown = {};
+  let openSection = null;
+
+  for (const line0 of raw.split(/\r?\n/)) {
+    const line = line0.trim();
+    if (!line) { openSection = null; continue; }
+
+    const hash = line.match(/^[^\w]*\s*(listing|ref|id|contract)?\s*(?:id)?\s*#\s*([\w-]{2,})/i);
+    if (hash && !fields.listing_id) { fields.listing_id = hash[2]; openSection = null; continue; }
+
+    const colon = line.indexOf(':');
+    if (colon > 0 && colon < 70) {
+      const rawLabel = line.slice(0, colon);
+      const value = line.slice(colon + 1).trim();
+      const label = normLabel(rawLabel);
+
+      if (!value && SECTION_LABELS.includes(label)) {
+        const f = ALIAS_INDEX.get(label);
+        openSection = f && f.type === 'text' ? f.key : null;
+        continue;
+      }
+      const field = ALIAS_INDEX.get(label);
+      if (field) {
+        // « Skrill: Yes » — le libellé EST le moyen de paiement, la valeur dit s'il est accepté.
+        const boolValue = parseBool(value);
+        if (field.type === 'list' && boolValue !== null) {
+          if (boolValue) {
+            const tag = stripEmoji(rawLabel).trim();
+            fields[field.key] = [...new Set([...(Array.isArray(fields[field.key]) ? fields[field.key] : []), tag])];
+          }
+          openSection = null;
+          continue;
+        }
+        const c = coerce(field, value);
+        if (field.type === 'list' && Array.isArray(fields[field.key])) {
+          fields[field.key] = [...new Set([...fields[field.key], ...c])];
+        } else if (fields[field.key] == null || fields[field.key] === '') {
+          fields[field.key] = c;
+        }
+        openSection = field.type === 'text' ? field.key : null;
+        continue;
+      }
+      if (value && label.length > 1 && label.length < 40) unknown[label] = value;
+      openSection = null;
+      continue;
+    }
+    if (openSection) {
+      const prev = fields[openSection];
+      fields[openSection] = prev ? prev + '\n' + stripEmoji(line).trim() : stripEmoji(line).trim();
+    }
+  }
+
+  if (fields.price == null) {
+    const m = raw.match(/(?:^|\n)[^\n]*?([$€£]\s?\d[\d\s.,]*)/);
+    if (m) fields.price = parseMoney(m[1]);
+  }
+
+  const matched = SIGNAL_FIELDS.filter(k => fields[k] != null && fields[k] !== '').length;
+  const total = Object.keys(fields).length;
+  const confidence = Math.min(1, matched / 4) * 0.7 + Math.min(1, total / 10) * 0.3;
+  return { fields, unknown, confidence, isListing: matched >= 2 && total >= 3, raw };
+}
+
+function hash64(str) {
+  let h = 0xcbf29ce484222325n; const p = 0x100000001b3n;
+  for (let i = 0; i < str.length; i++) { h ^= BigInt(str.charCodeAt(i)); h = (h * p) & 0xffffffffffffffffn; }
+  return h.toString(16).padStart(16, '0');
+}
+function dedupeKey(f, raw) {
+  if (f.listing_id) return 'lid:' + hash64(String(f.listing_id).toLowerCase());
+  const sig = [f.age ?? '', normLabel(f.origin ?? ''), f.price?.amount ?? '', f.salary?.amount ?? '', f.english_level ?? ''].join('|');
+  if (sig.replace(/\|/g,'').length >= 4) return 'sig:' + hash64(sig);
+  return 'raw:' + hash64(normLabel(raw).slice(0, 400));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   2. TRI — filtres durs + score appris (shared/talents/score.mjs)
+   ════════════════════════════════════════════════════════════════════════ */
+const DEFAULT_PREFS = {
+  max_price: null, min_age: 18, max_age: null, min_english: null, min_hours: null,
+  blocked_countries: [], require_onlyfans: false, exclude_with_agency: false, require_account_access: false,
+};
+const nrm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+
+function hardFilter(f, prefs) {
+  const p = { ...DEFAULT_PREFS, ...(prefs || {}) };
+  const out = [];
+  const price = f.price?.amount ?? null, salary = f.salary?.amount ?? null;
+  if (p.max_price != null && price != null && price > p.max_price) out.push('Prix ' + price + ' > budget ' + p.max_price);
+  if (p.min_age != null && f.age != null && f.age < p.min_age) out.push('Âge ' + f.age + ' < ' + p.min_age);
+  if (p.max_age != null && f.age != null && f.age > p.max_age) out.push('Âge ' + f.age + ' > ' + p.max_age);
+  if (p.min_english != null && f.english_level != null && f.english_level < p.min_english) out.push('Anglais ' + f.english_level + ' < ' + p.min_english);
+  if (p.min_hours != null && f.hours_per_day?.hours != null && f.hours_per_day.hours < p.min_hours) out.push(f.hours_per_day.hours + ' h/j < ' + p.min_hours);
+  if (p.require_onlyfans && f.onlyfans === false) out.push('Pas de compte OnlyFans');
+  if (p.exclude_with_agency && f.with_agency === true) out.push('Déjà sous contrat en agence');
+  if (p.require_account_access && f.account_access === false) out.push('Ne donne pas accès aux comptes');
+  if (p.blocked_countries?.length && f.origin) {
+    const o = nrm(f.origin);
+    if (p.blocked_countries.some(c => o.includes(nrm(c)))) out.push('Origine exclue : ' + f.origin);
+  }
+  if (p.max_price != null && salary != null && price == null && salary > p.max_price) out.push('Salaire ' + salary + ' > budget ' + p.max_price);
+  return out;
+}
+
+const PRICE_BUCKETS = [0, 300, 600, 1000, 1500, 2500, Infinity];
+const bucket = (n, arr) => { for (let i = 1; i < arr.length; i++) if (n < arr[i]) return arr[i-1] + '-' + arr[i]; return 'max'; };
+
+function featuresOf(f) {
+  const out = [];
+  if (f.origin) out.push('origin=' + nrm(f.origin));
+  if (f.price?.amount != null) out.push('price=' + bucket(f.price.amount, PRICE_BUCKETS));
+  if (f.salary?.amount != null) out.push('salary=' + bucket(f.salary.amount, PRICE_BUCKETS));
+  if (f.age != null) out.push('age=' + (f.age < 21 ? '18-20' : f.age < 25 ? '21-24' : f.age < 30 ? '25-29' : '30+'));
+  if (f.english_level != null) out.push('en=' + f.english_level);
+  if (f.hours_per_day?.hours != null) out.push('hours=' + (f.hours_per_day.hours < 3 ? 'low' : f.hours_per_day.hours < 6 ? 'mid' : 'high'));
+  if (f.onlyfans != null) out.push('of=' + f.onlyfans);
+  if (f.with_agency != null) out.push('agency=' + f.with_agency);
+  if (f.account_access != null) out.push('access=' + f.account_access);
+  if (f.reels != null) out.push('reels=' + f.reels);
+  for (const c of (f.content_types || []).slice(0,6)) out.push('content=' + nrm(c));
+  for (const c of (f.payment || []).slice(0,4)) out.push('pay=' + nrm(c));
+  return out;
+}
+const MIN_DECISIONS = 20;
+function trainModel(decisions) {
+  const matched = new Map(), passed = new Map();
+  let nM = 0, nP = 0;
+  for (const d of decisions) {
+    if (d.decision !== 'match' && d.decision !== 'pass') continue;
+    const t = d.decision === 'match' ? matched : passed;
+    if (d.decision === 'match') nM++; else nP++;
+    for (const f of new Set(featuresOf(d.fields || {}))) t.set(f, (t.get(f) || 0) + 1);
+  }
+  return { matched, passed, nM, nP, total: nM + nP };
+}
+function scoreListing(f, model) {
+  if (!model || model.total < MIN_DECISIONS || model.nM === 0 || model.nP === 0) return { ready: false, score: null, top: [] };
+  const a = 1;
+  let logit = Math.log((model.nM + a) / (model.nP + a));
+  const contribs = [];
+  for (const k of new Set(featuresOf(f))) {
+    const pM = ((model.matched.get(k) || 0) + a) / (model.nM + 2*a);
+    const pP = ((model.passed.get(k)  || 0) + a) / (model.nP + 2*a);
+    const w = Math.log(pM / pP);
+    logit += w;
+    if (Math.abs(w) > 0.15) contribs.push({ feature: k, weight: w });
+  }
+  contribs.sort((x, y) => Math.abs(y.weight) - Math.abs(x.weight));
+  // Borné à 1–99 : un score de 100 prétendrait à une certitude qu'un modèle
+  // entraîné sur quelques dizaines de swipes n'a pas.
+  const pct = Math.round(100 / (1 + Math.exp(-logit)));
+  return { ready: true, score: Math.min(99, Math.max(1, pct)), top: contribs.slice(0, 3) };
+}
+function explainFeature(k) {
+  const [a, b] = String(k).split('=');
+  const L = { origin:'Origine', price:'Prix', salary:'Salaire', age:'Âge', en:'Anglais', hours:'Heures/j',
+              of:'OnlyFans', agency:'En agence', access:'Accès comptes', reels:'Reels', content:'Contenu', pay:'Paiement' }[a] || a;
+  const V = b === 'true' ? 'oui' : b === 'false' ? 'non' : b === 'low' ? 'peu' : b === 'mid' ? 'moyen' : b === 'high' ? 'élevé' : b;
+  return L + ' · ' + V;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   3. ÉTAT — servi par le worker local (aucun stockage dans le navigateur :
+   la vérité est dans worker-telegram/data/, partagée avec le processus qui
+   écoute Telegram).
+   ════════════════════════════════════════════════════════════════════════ */
+const state = {
+  listings: [], salons: [], decisions: {}, stages: {}, notes: {},
+  prefs: { ...DEFAULT_PREFS },
+  stats: { duplicates: 0 },
+  telegram: { connected: false, demo: false, me: null },
+  dialogs: null, dialogQuery: '',
+  history: [], tab: 'deck', stageFilter: 'all', showFiltered: false,
+};
+
+const STAGES = [
+  { k:'new',         label:'À contacter' },
+  { k:'contacted',   label:'Contactée' },
+  { k:'negotiating', label:'En négo' },
+  { k:'signed',      label:'Signée' },
+  { k:'lost',        label:'Perdue' },
+];
+
+async function api(path, body) {
+  const r = await fetch('/api/' + path, body === undefined ? {} : {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+async function refresh() {
+  try {
+    const s = await api('state');
+    Object.assign(state, {
+      listings: s.listings, salons: s.salons, decisions: s.decisions,
+      stages: s.stages, notes: s.notes, prefs: s.prefs, stats: s.stats, telegram: s.telegram,
+    });
+    render();
+  } catch (e) {
+    setStatus('off', 'Le worker ne répond plus. Vérifie le terminal où tourne <b>npm start</b>.');
+  }
+}
+
+/* Le serveur pousse un événement à chaque changement : une annonce qui arrive
+   sur Telegram apparaît ici sans rien rafraîchir. */
+function listen() {
+  const es = new EventSource('/api/events');
+  es.onmessage = () => refresh();
+  es.onerror = () => setStatus('off', 'Connexion au worker perdue — reconnexion…');
+}
+
+function setStatus(kind, html) {
+  const el = document.getElementById('status');
+  el.className = 'status' + (kind ? ' ' + kind : '');
+  document.getElementById('status-text').innerHTML = html;
+}
+
+/* ── Sélecteurs ─────────────────────────────────────────────────────────── */
+const model = () => trainModel(Object.entries(state.decisions)
+  .map(([id, decision]) => { const l = state.listings.find(x => x.id === id); return l ? { fields: l.fields, decision } : null; })
+  .filter(Boolean));
+
+function deck() {
+  const m = model();
+  const open = state.listings.filter(l => l.status === 'inbox'
+    && state.decisions[l.id] !== 'match' && state.decisions[l.id] !== 'pass');
+  if (m.total < MIN_DECISIONS) return open.sort((a, b) => b.postedAt - a.postedAt);
+  return open.sort((a, b) => (scoreListing(b.fields, m).score ?? 0) - (scoreListing(a.fields, m).score ?? 0));
+}
+const filteredOut = () => state.listings.filter(l => l.status === 'filtered');
+const reviewList  = () => state.listings.filter(l => l.status === 'review');
+const favorites   = () => state.listings.filter(l => state.decisions[l.id] === 'match')
+  .sort((a, b) => b.postedAt - a.postedAt);
+const salonTitleOf = l => l.salonTitle || 'Salon inconnu';
+
+/* ── Formatage ──────────────────────────────────────────────────────────── */
+function money(m) {
+  if (!m) return '—';
+  if (m.amount == null) return m.raw || '—';
+  const sym = m.currency === 'EUR' ? '€' : m.currency === 'GBP' ? '£' : '$';
+  // Espace fine pour les milliers : l'espace insécable de toLocaleString rend
+  // à pleine chasse en JetBrains Mono et disloque les montants.
+  return sym + String(Math.round(m.amount * 100) / 100).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+function ago(ts) {
+  const min = Math.round((Date.now() - ts) / 60000);
+  if (min < 1) return 'à l’instant';
+  if (min < 60) return 'il y a ' + min + ' min';
+  const h = Math.round(min / 60);
+  if (h < 24) return 'il y a ' + h + ' h';
+  return 'il y a ' + Math.round(h / 24) + ' j';
+}
+function titleOf(l) {
+  const f = l.fields;
+  if (f.name) return f.name;
+  const bits = [f.origin, f.age ? f.age + ' ans' : null].filter(Boolean);
+  return bits.length ? bits.join(' · ') : (f.listing_id ? 'Annonce #' + f.listing_id : 'Annonce');
+}
+// Teinte déterministe dérivée de la référence : deux annonces différentes ne se
+// confondent pas visuellement, et aucune photo réelle n'est nécessaire.
+function tint(l) {
+  let h = 0;
+  for (const c of l.id) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return 'linear-gradient(140deg, hsl(' + h + ' 42% 26%), hsl(' + ((h + 46) % 360) + ' 38% 15%))';
+}
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+/* ════════════════════════════════════════════════════════════════════════
+   5. RENDU
+   ════════════════════════════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+
+function render() {
+  const d = deck(), fav = favorites(), fo = filteredOut();
+  $('#c-deck').textContent = d.length;
+  $('#c-fav').textContent = fav.length;
+  $('#c-filtered').textContent = fo.length;
+  $('#c-dupes').textContent = state.stats?.duplicates ?? 0;
+  $('#n-deck').textContent = d.length;
+  $('#n-fav').textContent = fav.length;
+  $('#undo').disabled = state.history.length === 0;
+
+  document.getElementById('n-salons').textContent = state.salons.length;
+  renderStatus();
+
+  for (const [tab, panel] of [['deck','p-deck'],['fav','p-fav'],['paste','p-paste'],['salons','p-salons'],['filters','p-filters']]) {
+    $('#tab-' + tab).setAttribute('aria-selected', String(state.tab === tab));
+    $('#' + panel).classList.toggle('hidden', state.tab !== tab);
+  }
+
+  renderDeck(d);
+  renderSort();
+  renderFilteredList(fo);
+  renderFavs(fav);
+  renderSalons();
+  renderFilterPreview();
+}
+
+function renderStatus() {
+  const t = state.telegram;
+  const listening = state.salons.filter(s => s.active).length;
+  if (t.demo) {
+    return setStatus('', 'Mode démo — Telegram n’est pas connecté. Relance sans <code>--demo</code> une fois ta session en place.');
+  }
+  if (!t.connected) {
+    return setStatus('off', 'Telegram non connecté. Lance <b>npm run login</b> dans <code>worker-telegram/</code>, puis <b>npm start</b>.');
+  }
+  if (!listening) {
+    return setStatus('', 'Connecté en tant que <b>' + esc(t.me || '') + '</b> — aucun salon écouté. Choisis-en dans l’onglet <b>Salons</b>.');
+  }
+  setStatus('live', 'À l’écoute de <b>' + listening + '</b> salon' + (listening > 1 ? 's' : '')
+    + ' en tant que <b>' + esc(t.me || '') + '</b>. Les nouvelles annonces arrivent toutes seules.');
+}
+
+/* ── Deck ───────────────────────────────────────────────────────────────── */
+function renderDeck(d) {
+  const stage = $('#stage');
+  stage.innerHTML = '';
+  if (!d.length) {
+    stage.innerHTML = '<div class="card" style="cursor:default"><div class="empty" style="margin:auto">'
+      + '<h3>Tout est trié</h3><p>Plus rien à trancher. Colle une annonce de ton salon dans l’onglet « Coller une annonce », ou repars de zéro.</p></div></div>';
+    return;
+  }
+  // Deux châssis derrière la carte active : on sent la pile sans superposer
+  // deux contenus illisibles l'un sur l'autre.
+  for (let i = Math.min(2, d.length - 1); i >= 1; i--) {
+    const g = document.createElement('div');
+    g.className = 'card ghost';
+    g.style.transform = 'translateY(' + (i * 13) + 'px) scale(' + (1 - i * 0.03) + ')';
+    g.style.opacity = String(1 - i * 0.4);
+    stage.appendChild(g);
+  }
+  stage.appendChild(cardEl(d[0]));
+}
+
+function cardEl(l) {
+  const f = l.fields;
+  const s = scoreListing(f, model());
+  const el = document.createElement('article');
+  el.className = 'card';
+
+  const chips = [];
+  if (f.onlyfans === true) chips.push(['ok','OnlyFans']);
+  if (f.reels === true) chips.push(['acc','TikTok / Reels']);
+  if (f.account_access === true) chips.push(['ok','Accès comptes']);
+  if (f.account_access === false) chips.push(['','Pas d’accès']);
+  if (f.with_agency === true) chips.push(['warn','Déjà en agence']);
+  if (f.warranty != null) chips.push(['acc','Garantie ' + f.warranty + ' j']);
+  if (f.can_start) chips.push(['','Dispo · ' + f.can_start]);
+  if (l.seenIn.length > 1) chips.push(['warn','Vue dans ' + l.seenIn.length + ' salons']);
+
+  const rows = [];
+  if (f.content_types?.length) rows.push(['Contenu', f.content_types.join(' · '), '']);
+  if (f.blocked_countries?.length) rows.push(['Pays bloqués', f.blocked_countries.join(', '), '']);
+  if (f.device) rows.push(['Téléphone', f.device, '']);
+  if (f.additional_info) rows.push(['Infos', f.additional_info, '']);
+  if (f.middleman) rows.push(['Intermédiaire', f.middleman, 'mono']);
+
+  const affColor = s.ready ? (s.score >= 70 ? 'var(--match)' : s.score >= 45 ? 'var(--later)' : 'var(--pass)') : '';
+
+  el.innerHTML =
+    '<div class="thumb" style="background:' + tint(l) + '">'
+      + '<span class="thumb-meta">'
+        + '<span class="thumb-ref">' + (f.listing_id ? '#' + esc(f.listing_id) : esc(l.salon)) + '</span>'
+        + '<span class="thumb-price">' + esc(money(f.price)) + '</span>'
+      + '</span>'
+    + '</div>'
+    + '<div class="verdict" id="verdict"></div>'
+    + '<div class="card-body">'
+      + '<div class="card-head">'
+        + '<div style="min-width:0;flex:1">'
+          + '<div class="card-name">' + esc(titleOf(l)) + '</div>'
+          + '<div class="card-sub">' + esc(salonTitleOf(l)) + ' · ' + ago(l.postedAt) + '</div>'
+        + '</div>'
+        + (s.ready ? '<div class="affinity" style="color:' + affColor + '" title="' + esc(s.top.map(t => (t.weight > 0 ? '+ ' : '− ') + explainFeature(t.feature)).join('\n')) + '"><b>' + s.score + '</b><span>AFFINITÉ</span></div>' : '')
+      + '</div>'
+      + '<div class="stats">'
+        + '<div class="stat lead"><span>Prix</span><b>' + esc(money(f.price)) + '</b></div>'
+        + '<div class="stat"><span>Salaire</span><b>' + esc(money(f.salary)) + '</b></div>'
+        + '<div class="stat"><span>Anglais</span><b>' + (f.english_level != null ? f.english_level + '/5' : '—') + '</b></div>'
+        + '<div class="stat"><span>Heures / jour</span><b>' + (f.hours_per_day?.hours != null ? f.hours_per_day.hours + ' h' : esc(f.hours_per_day?.raw ?? '—')) + '</b></div>'
+      + '</div>'
+      + (chips.length ? '<div class="chips">' + chips.map(c => '<span class="chip ' + c[0] + '">' + esc(c[1]) + '</span>').join('') + '</div>' : '')
+      + (rows.length ? '<dl class="rows">' + rows.map(r => '<div class="row"><dt>' + r[0] + '</dt><dd class="' + r[2] + '">' + esc(r[1]) + '</dd></div>').join('') + '</dl>' : '')
+    + '</div>'
+    + '<div class="actions">'
+      + '<button class="act pass"  data-d="pass">Pass <kbd>←</kbd></button>'
+      + '<button class="act later" data-d="later">Plus tard <kbd>↓</kbd></button>'
+      + '<button class="act match" data-d="match">Match <kbd>→</kbd></button>'
+    + '</div>';
+
+  el.querySelectorAll('.act').forEach(b => {
+    b.addEventListener('pointerdown', e => e.stopPropagation());
+    b.addEventListener('click', () => fire(l, b.dataset.d, el));
+  });
+
+  const shotBox = el.querySelector('.shots');
+  if (shotBox && shots.length > 1) {
+    const step = d => {
+      const i = Math.min(shots.length - 1, Math.max(0, Number(shotBox.dataset.i) + d));
+      shotBox.dataset.i = String(i);
+      shotBox.querySelector('img').src = shots[i].url;
+      shotBox.querySelectorAll('.bars i').forEach((b, n) => b.classList.toggle('on', n === i));
+    };
+    shotBox.querySelector('.prev').addEventListener('pointerdown', e => { e.stopPropagation(); step(-1); });
+    shotBox.querySelector('.next').addEventListener('pointerdown', e => { e.stopPropagation(); step(1); });
+  }
+  attachDrag(el, l);
+  return el;
+}
+
+const VERDICTS = { match: ['MATCH','var(--match)','left'], pass: ['PASS','var(--pass)','right'], later: ['PLUS TARD','var(--later)','left'] };
+function showVerdict(el, d) {
+  const v = el.querySelector('#verdict');
+  if (!v) return;
+  if (!d) { v.classList.remove('on'); return; }
+  const [text, color, side] = VERDICTS[d];
+  v.textContent = text;
+  v.style.color = color;
+  v.style.left = side === 'left' ? '20px' : 'auto';
+  v.style.right = side === 'right' ? '20px' : 'auto';
+  v.style.transform = 'rotate(' + (side === 'left' ? -10 : 10) + 'deg)';
+  v.classList.add('on');
+}
+
+let busy = false;
+function fire(l, d, el) {
+  if (busy) return;
+  busy = true;
+  showVerdict(el, d);
+  el.classList.add('settle');
+  el.style.transform = d === 'match' ? 'translateX(560px) rotate(20deg)'
+                     : d === 'pass'  ? 'translateX(-560px) rotate(-20deg)'
+                     : 'translateY(430px)';
+  el.style.opacity = '0';
+  setTimeout(async () => {
+    state.decisions[l.id] = d;                      // affichage immédiat
+    state.history.push({ id: l.id, decision: d });
+    if (d === 'match' && !state.stages[l.id]) state.stages[l.id] = 'new';
+    busy = false; render();
+    try { await api('decide', { id: l.id, decision: d }); } catch (e) { setStatus('off', 'Décision non enregistrée : ' + esc(e.message)); }
+  }, 150);
+}
+
+const THRESHOLD = 110;
+function attachDrag(el, l) {
+  let start = null, dx = 0, dy = 0;
+  el.addEventListener('pointerdown', e => {
+    if (busy) return;
+    start = { x: e.clientX, y: e.clientY };
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('dragging');
+  });
+  el.addEventListener('pointermove', e => {
+    if (!start) return;
+    dx = e.clientX - start.x; dy = e.clientY - start.y;
+    el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + (dx / 26) + 'deg)';
+    showVerdict(el, dx > 55 ? 'match' : dx < -55 ? 'pass' : dy > 55 ? 'later' : null);
+  });
+  const end = () => {
+    if (!start) return;
+    start = null;
+    el.classList.remove('dragging');
+    if (dx > THRESHOLD) return fire(l, 'match', el);
+    if (dx < -THRESHOLD) return fire(l, 'pass', el);
+    if (dy > THRESHOLD) return fire(l, 'later', el);
+    el.classList.add('settle');
+    el.style.transform = '';
+    showVerdict(el, null);
+    dx = dy = 0;
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
+}
+
+/* ── Panneau de tri ─────────────────────────────────────────────────────── */
+function renderSort() {
+  const m = model();
+  const ready = m.total >= MIN_DECISIONS;
+  $('#sort-tag').textContent = ready ? 'Actif' : 'En apprentissage';
+  $('#sort-tag').className = 'tag' + (ready ? ' live' : '');
+  $('#sort-sub').textContent = ready
+    ? 'Le deck est ordonné par affinité, appris sur tes ' + m.total + ' décisions.'
+    : m.total + ' / ' + MIN_DECISIONS + ' décisions — sous ce seuil, l’ordre reste chronologique.';
+  const meter = $('#meter');
+  meter.classList.toggle('done', ready);
+  meter.firstElementChild.style.width = Math.min(100, (m.total / MIN_DECISIONS) * 100) + '%';
+
+  const box = $('#traits');
+  if (!ready) { box.innerHTML = ''; return; }
+  const acc = new Map();
+  for (const l of deck().slice(0, 40)) {
+    for (const c of scoreListing(l.fields, m).top) {
+      const p = acc.get(c.feature) || { sum: 0, n: 0 };
+      acc.set(c.feature, { sum: p.sum + c.weight, n: p.n + 1 });
+    }
+  }
+  const traits = [...acc.entries()].map(([f, v]) => ({ f, w: v.sum / v.n }))
+    .sort((a, b) => Math.abs(b.w) - Math.abs(a.w)).slice(0, 6);
+  box.innerHTML = traits.length
+    ? '<div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px">Ce que le modèle a retenu</div>'
+      + traits.map(t => {
+        const col = t.w > 0 ? 'var(--match)' : 'var(--pass)';
+        const w = Math.min(50, Math.abs(t.w) * 18);
+        return '<div class="trait"><span>' + esc(explainFeature(t.f)) + '</span>'
+          + '<span class="bar"><i style="width:' + w + '%;background:' + col + ';' + (t.w < 0 ? 'transform:translateX(-100%)' : '') + '"></i></span>'
+          + '<span class="w" style="color:' + col + '">' + (t.w > 0 ? '+' : '') + t.w.toFixed(1) + '</span></div>';
+      }).join('')
+    : '';
+}
+
+/* ── Écartées ───────────────────────────────────────────────────────────── */
+function renderFilteredList(fo) {
+  $('#filtered-count').textContent = fo.length;
+  $('#filtered-panel').classList.toggle('hidden', fo.length === 0);
+  const list = $('#filtered-list');
+  list.classList.toggle('hidden', !state.showFiltered);
+  $('#toggle-filtered').textContent = state.showFiltered ? 'Masquer' : 'Voir';
+  if (!state.showFiltered) return;
+  list.style.maxHeight = '320px';
+  list.style.overflowY = 'auto';
+  list.innerHTML = fo.slice(0, 80).map(l =>
+    '<div class="filtered-row"><span>' + esc(titleOf(l)) + '</span>'
+    + '<span class="why">' + esc(l.reasons[0]) + '</span>'
+    + '<span class="pr">' + esc(money(l.fields.price)) + '</span></div>').join('');
+}
+
+/* ── Favoris ────────────────────────────────────────────────────────────── */
+function renderFavs(fav) {
+  const sf = $('#stage-filter');
+  sf.innerHTML = ['<button class="sf" data-s="all" aria-pressed="' + (state.stageFilter === 'all') + '">Tous · ' + fav.length + '</button>']
+    .concat(STAGES.map(s => {
+      const n = fav.filter(l => (state.stages[l.id] || 'new') === s.k).length;
+      return '<button class="sf" data-s="' + s.k + '" aria-pressed="' + (state.stageFilter === s.k) + '">' + s.label + ' · ' + n + '</button>';
+    })).join('');
+  sf.querySelectorAll('.sf').forEach(b => b.onclick = () => { state.stageFilter = b.dataset.s; render(); });
+
+  const list = state.stageFilter === 'all' ? fav : fav.filter(l => (state.stages[l.id] || 'new') === state.stageFilter);
+  const box = $('#favs');
+  if (!fav.length) {
+    box.innerHTML = '<div class="panel" style="grid-column:1/-1"><div class="empty">'
+      + '<h3>Aucun favori pour l’instant</h3><p>Chaque match du deck atterrit ici, avec son étape de recrutement et une note libre.</p></div></div>';
+    return;
+  }
+  box.innerHTML = list.map(l => {
+    const f = l.fields;
+    return '<article class="fav">'
+      + '<div class="fav-thumb" style="background:' + tint(l) + '"></div>'
+      + '<div class="fav-body">'
+        + '<div><div class="fav-name">' + esc(titleOf(l)) + '</div>'
+        + '<div class="fav-line" style="margin-top:2px"><span>Prix <b>' + esc(money(f.price)) + '</b></span><span>Salaire <b>' + esc(money(f.salary)) + '</b></span></div></div>'
+        + (f.middleman ? '<div class="fav-mm">' + esc(f.middleman) + '</div>' : '')
+        + '<select data-id="' + l.id + '">' + STAGES.map(s =>
+            '<option value="' + s.k + '"' + ((state.stages[l.id] || 'new') === s.k ? ' selected' : '') + '>' + s.label + '</option>').join('') + '</select>'
+        + '<textarea data-id="' + l.id + '" placeholder="Note (contact, réponse, conditions…)">' + esc(state.notes[l.id] || '') + '</textarea>'
+        + '<button class="drop" data-id="' + l.id + '">Retirer des favoris</button>'
+      + '</div></article>';
+  }).join('');
+
+  box.querySelectorAll('select').forEach(el => el.onchange = () => {
+    state.stages[el.dataset.id] = el.value; render();
+    api('stage', { id: el.dataset.id, stage: el.value }).catch(() => {});
+  });
+  box.querySelectorAll('textarea').forEach(el => el.onblur = () => {
+    if (el.value === (state.notes[el.dataset.id] || '')) return;
+    state.notes[el.dataset.id] = el.value;
+    api('note', { id: el.dataset.id, note: el.value }).catch(() => {});
+  });
+  box.querySelectorAll('.drop').forEach(b => b.onclick = () => {
+    delete state.decisions[b.dataset.id]; delete state.stages[b.dataset.id];
+    state.history = state.history.filter(h => h.id !== b.dataset.id);
+    render();
+    api('undecide', { id: b.dataset.id }).catch(() => {});
+  });
+}
+
+/* ── Salons ─────────────────────────────────────────────────────────────── */
+async function loadDialogs() {
+  const box = $('#dialog-list');
+  box.innerHTML = '<div class="panel-body" style="color:var(--ink-3);font-size:12.5px">Lecture de tes salons Telegram…</div>';
+  try {
+    const r = await api('dialogs');
+    state.dialogs = r.dialogs || [];
+    if (r.offline) state.dialogs = null;
+  } catch (e) { state.dialogs = null; }
+  render();
+}
+
+function renderSalons() {
+  const list = $('#salon-list');
+  list.innerHTML = state.salons.length
+    ? state.salons.map(s => {
+        const n = state.listings.filter(l => l.salonId === s.id).length;
+        return '<div class="salon-row">'
+          + '<span class="id"><b>' + esc(s.title) + '</b>'
+            + '<span>' + esc(s.username ? '@' + s.username : s.chatId) + ' · ' + n + ' annonces'
+            + (s.lastSeenAt ? ' · dernier message ' + ago(s.lastSeenAt) : ' · aucun message reçu') + '</span>'
+            + (s.lastError ? '<span class="err">' + esc(s.lastError) + '</span>' : '')
+          + '</span>'
+          + '<span class="tag' + (s.active ? ' live' : '') + '">' + (s.active ? 'Écouté' : 'En pause') + '</span>'
+          + '<span class="acts">'
+            + '<button class="btn" data-backfill="' + esc(s.id) + '">Rattraper</button>'
+            + '<button class="btn" data-toggle="' + esc(s.id) + '" data-active="' + (!s.active) + '">' + (s.active ? 'Pause' : 'Reprendre') + '</button>'
+            + '<button class="btn" data-remove="' + esc(s.id) + '">Retirer</button>'
+          + '</span></div>';
+      }).join('')
+    : '<div class="empty"><h3>Aucun salon écouté</h3><p>Choisis-en un dans la liste à droite. Le worker se met à l’écouter sans redémarrage.</p></div>';
+
+  list.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
+    await api('salon/toggle', { id: b.dataset.toggle, active: b.dataset.active === 'true' }); refresh();
+  });
+  list.querySelectorAll('[data-remove]').forEach(b => b.onclick = async () => {
+    await api('salon/remove', { id: b.dataset.remove }); refresh();
+  });
+  list.querySelectorAll('[data-backfill]').forEach(b => b.onclick = async () => {
+    b.textContent = 'En cours…'; b.disabled = true;
+    await api('salon/backfill', { id: b.dataset.backfill });
+  });
+
+  const box = $('#dialog-list');
+  if (state.dialogs === null) {
+    box.innerHTML = '<div class="panel-body" style="color:var(--ink-3);font-size:12.5px">'
+      + 'Telegram n’est pas connecté — impossible de lister tes salons. Lance <code>npm run login</code> puis <code>npm start</code>.</div>';
+    return;
+  }
+  const known = new Set(state.salons.map(s => s.chatId));
+  const q = state.dialogQuery.trim().toLowerCase();
+  const rows = state.dialogs.filter(d => !q || d.title.toLowerCase().includes(q) || (d.username || '').toLowerCase().includes(q));
+  box.innerHTML = rows.length
+    ? rows.slice(0, 200).map(d =>
+        '<div class="dialog-row">'
+        + '<span class="id"><b>' + esc(d.title) + '</b><span>' + esc(d.username ? '@' + d.username : d.chatId) + '</span></span>'
+        + (d.participants ? '<span class="n">' + d.participants.toLocaleString('fr-FR') + '</span>' : '')
+        + (known.has(String(d.chatId))
+            ? '<span class="tag live">Ajouté</span>'
+            : '<button class="btn primary" data-add=\'' + esc(JSON.stringify(d)) + '\'>Écouter</button>')
+        + '</div>').join('')
+    : '<div class="panel-body" style="color:var(--ink-3);font-size:12.5px">Aucun salon ne correspond.</div>';
+
+  box.querySelectorAll('[data-add]').forEach(b => b.onclick = async () => {
+    b.textContent = 'Ajout…'; b.disabled = true;
+    const d = JSON.parse(b.dataset.add);
+    await api('salon/add', { chatId: d.chatId, title: d.title, username: d.username, kind: d.kind });
+    refresh();
+  });
+}
+
+/* ── Aperçu des filtres ─────────────────────────────────────────────────── */
+function renderFilterPreview() {
+  const fo = filteredOut();
+  const why = new Map();
+  for (const l of fo) {
+    const k = l.reasons[0].replace(/\d+/g, 'n').replace(/ : .*/, '');
+    why.set(k, (why.get(k) || 0) + 1);
+  }
+  const rows = [...why.entries()].sort((a, b) => b[1] - a[1]);
+  $('#filter-preview').innerHTML =
+    '<p><b>' + fo.length + '</b> annonces sur ' + state.listings.length + ' sont écartées, <b>' + (state.listings.length - fo.length) + '</b> entrent dans le deck.</p>'
+    + (rows.length
+      ? '<div class="rows" style="margin-top:10px">' + rows.map(r =>
+          '<div class="row"><dt style="flex:1 1 auto">' + esc(r[0]) + '</dt><dd class="mono">' + r[1] + '</dd></div>').join('') + '</div>'
+      : '<p style="color:var(--ink-3)">Aucune règle ne rejette d’annonce en ce moment.</p>');
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   6. INTERACTIONS
+   ════════════════════════════════════════════════════════════════════════ */
+for (const t of ['deck','fav','paste','salons','filters']) {
+  $('#tab-' + t).onclick = () => { state.tab = t; if (t === 'salons' && !state.dialogs) loadDialogs(); render(); };
+}
+$('#reload-dialogs').onclick = () => { state.dialogs = null; loadDialogs(); };
+$('#dialog-search').oninput = e => { state.dialogQuery = e.target.value; renderSalons(); };
+$('#toggle-filtered').onclick = () => { state.showFiltered = !state.showFiltered; render(); };
+
+$('#reset').onclick = async () => {
+  if (!confirm('Effacer toutes tes décisions ? Les annonces captées et tes salons restent en place.')) return;
+  await api('reset-decisions');
+  state.history = [];
+  await refresh();
+};
+
+$('#undo').onclick = () => {
+  const last = state.history.pop();
+  if (!last) return;
+  delete state.decisions[last.id];
+  delete state.stages[last.id];
+  render();
+  api('undecide', { id: last.id }).catch(() => {});
+};
+
+document.addEventListener('keydown', e => {
+  if (state.tab !== 'deck' || busy) return;
+  if (e.target.closest('input, textarea, select')) return;
+  const d = e.key === 'ArrowLeft' ? 'pass' : e.key === 'ArrowRight' ? 'match' : e.key === 'ArrowDown' ? 'later' : null;
+  if (!d) return;
+  e.preventDefault();
+  const top = deck()[0];
+  const el = $('#stage .card:not(.ghost)');
+  if (top && el) fire(top, d, el);
+});
+
+/* ── Coller ─────────────────────────────────────────────────────────────── */
+$('#do-sample').onclick = () => { $('#paste').value = sampleText(97); $('#do-parse').click(); };
+
+$('#do-parse').onclick = () => {
+  const raw = $('#paste').value;
+  const p = parseListing(raw);
+  state.parsed = p;
+  const out = $('#parse-out');
+  const tag = $('#parse-tag');
+
+  if (!raw.trim()) {
+    tag.textContent = 'En attente'; tag.className = 'tag';
+    out.innerHTML = '<p style="color:var(--ink-3)">Colle un message à gauche, puis <b>Lire l’annonce</b>.</p>';
+    $('#do-add').disabled = true;
+    return;
+  }
+
+  const known = Object.entries(p.fields).filter(([, v]) => v != null && v !== '');
+  const unknown = Object.entries(p.unknown);
+  tag.textContent = Math.round(p.confidence * 100) + ' % lu';
+  tag.className = 'tag' + (p.isListing ? ' live' : '');
+
+  const fmt = (k, v) => {
+    const t = FIELD_BY_KEY[k]?.type;
+    if (t === 'money') return money(v);
+    if (t === 'hours') return v.hours != null ? v.hours + ' h/jour' : v.raw;
+    if (t === 'bool') return v === true ? 'oui' : v === false ? 'non' : '—';
+    if (Array.isArray(v)) return v.join(' · ');
+    return String(v);
+  };
+
+  out.innerHTML =
+    (p.isListing
+      ? '<div class="note ok">Annonce reconnue — ' + known.length + ' champs lus. Elle peut entrer dans le deck.</div>'
+      : '<div class="note bad">Pas assez de champs reconnus pour en faire une annonce. Si c’en est bien une, ses libellés sont à ajouter au dictionnaire (<code>shared/talents/fields.mjs</code>).</div>')
+    + '<div class="parsed" style="margin-top:12px">'
+      + known.map(([k, v]) => '<div class="pf"><span>' + esc(FIELD_BY_KEY[k]?.label || k) + '</span><b>' + esc(fmt(k, v)) + '</b></div>').join('')
+      + unknown.map(([k, v]) => '<div class="pf unknown"><span>non reconnu · ' + esc(k) + '</span><b>' + esc(v) + '</b></div>').join('')
+    + '</div>'
+    + '<p style="margin-top:12px;font-size:11.5px;color:var(--ink-3);font-family:var(--font-mono)">clé de dédoublonnage · ' + esc(dedupeKey(p.fields, raw)) + '</p>';
+
+  $('#do-add').disabled = !p.isListing;
+};
+
+$('#do-add').onclick = async () => {
+  const out = $('#parse-out');
+  try {
+    const r = await api('paste', { raw: $('#paste').value });
+    if (r.ok) {
+      out.insertAdjacentHTML('afterbegin', '<div class="note ok" style="margin-bottom:10px">Ajoutée. Va la trancher dans l’onglet « À trier ».</div>');
+      $('#paste').value = '';
+      $('#do-add').disabled = true;
+    } else {
+      out.insertAdjacentHTML('afterbegin', '<div class="note bad" style="margin-bottom:10px">' + esc(r.why || 'Non ajoutée') + '</div>');
+    }
+    await refresh();
+  } catch (e) {
+    out.insertAdjacentHTML('afterbegin', '<div class="note bad" style="margin-bottom:10px">Worker injoignable : ' + esc(e.message) + '</div>');
+  }
+};
+
+/* ── Filtres ────────────────────────────────────────────────────────────── */
+function syncFilterForm() {
+  const p = state.prefs;
+  $('#f-price').value = p.max_price ?? '';
+  $('#f-en').value = p.min_english ?? '';
+  $('#f-agemin').value = p.min_age ?? '';
+  $('#f-agemax').value = p.max_age ?? '';
+  $('#f-hours').value = p.min_hours ?? '';
+  $('#f-countries').value = (p.blocked_countries || []).join(', ');
+  $('#s-of').setAttribute('aria-pressed', String(!!p.require_onlyfans));
+  $('#s-access').setAttribute('aria-pressed', String(!!p.require_account_access));
+  $('#s-agency').setAttribute('aria-pressed', String(!!p.exclude_with_agency));
+}
+for (const [id, key] of [['#s-of','require_onlyfans'],['#s-access','require_account_access'],['#s-agency','exclude_with_agency']]) {
+  $(id).onclick = () => {
+    const next = $(id).getAttribute('aria-pressed') !== 'true';
+    $(id).setAttribute('aria-pressed', String(next));
+    state.prefs[key] = next;
+  };
+}
+$('#apply-filters').onclick = async () => {
+  const num = v => { const n = Number(v); return v.trim() === '' || !Number.isFinite(n) ? null : n; };
+  state.prefs.max_price = num($('#f-price').value);
+  state.prefs.min_english = num($('#f-en').value);
+  state.prefs.min_age = num($('#f-agemin').value);
+  state.prefs.max_age = num($('#f-agemax').value);
+  state.prefs.min_hours = num($('#f-hours').value);
+  state.prefs.blocked_countries = $('#f-countries').value.split(',').map(s => s.trim()).filter(Boolean);
+  state.tab = 'deck';
+  await api('prefs', { prefs: state.prefs });
+  await refresh();
+};
+
+/* ── Démarrage ──────────────────────────────────────────────────────────── */
+refresh().then(() => { syncFilterForm(); listen(); });
+</script>
+</body>
+</html>

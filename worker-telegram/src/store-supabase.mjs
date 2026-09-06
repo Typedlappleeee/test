@@ -30,7 +30,7 @@ export function makeStore(env) {
     },
 
     /** Photos → bucket public `talents`. Retourne les chemins stockés. */
-    async uploadPhotos(photos, keyPrefix) {
+    async savePhotos(photos, keyPrefix) {
       const out = []
       for (let i = 0; i < photos.length; i++) {
         const p = photos[i]
