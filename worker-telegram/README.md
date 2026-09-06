@@ -60,11 +60,18 @@ Un rattrapage complète aussi les photos manquantes des annonces déjà captées
 sans toucher à tes décisions — et saute celles qui ont déjà les leurs, donc un
 second passage est quasi instantané.
 
-**Trier vite.** Au clavier : `←` pass · `→` match · `↓` plus tard (l'annonce
-repasse en fin de pile) · `espace` agrandit les photos en plein écran, où les
-flèches font défiler et où tu peux trancher sans revenir en arrière. Le menu
-**Trier** ordonne le deck par prix, niveau d'anglais, heures par jour, âge ou
-date, et le menu **Salon** le restreint à une marketplace.
+**Trois façons de trier**, selon ce que tu fais :
+
+- **Mode sourcing** (le bouton, ou `espace`) — plein écran, la photo en grand à
+  gauche, la fiche à droite, `←` pass · `→` match · `↓` plus tard. Chaque
+  décision enchaîne sur la suivante sans quitter l'écran : c'est le mode pour
+  abattre un parc entier. `A` / `E` changent de photo, `Échap` sort.
+- **Liste** — tout le parc sur une page, une ligne par annonce, comparable d'un
+  coup d'œil. Les en-têtes de colonnes trient ; les boutons tranchent sur place.
+- **Une par une** — la carte que l'on glisse, quand on prend son temps.
+
+Le menu **Trier** ordonne par prix, niveau d'anglais, heures par jour, âge ou
+date ; le menu **Salon** restreint à une marketplace.
 
 Tant que le terminal reste ouvert, ça écoute. Tu peux fermer l'onglet du
 navigateur, c'est le worker qui capte, pas la page.
