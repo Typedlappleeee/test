@@ -79,6 +79,7 @@ const server = createServer(async (req, res) => {
         case '/api/note':     store.setNote(body.id, body.note); break
         case '/api/prefs':    store.setPrefs(body.prefs); break
         case '/api/reset-decisions': store.resetDecisions(); break
+        case '/api/restore': store.restore(body.id); break
         case '/api/salon/add': {
           const row = store.addSalon(body)
           if (row && client) { await watchSalons(); if (BACKFILL_NEW) void backfillOne(row) }
@@ -92,7 +93,10 @@ const server = createServer(async (req, res) => {
           break
         }
         case '/api/paste': {
-          // Coller une annonce à la main : même lecteur que l'ingestion.
+          // Sans interface depuis la fusion des écrans, mais toujours joignable
+          // pour éprouver un format de salon :
+          //   curl -X POST localhost:8787/api/paste -H "content-type: application/json" -d "{\"raw\":\"…\"}"
+
           const p = parseListing(body.raw || '')
           if (!p.isListing) return json(res, 200, { ok: false, why: 'Pas reconnu comme une annonce' })
           p.dedupeKey = dedupeKey(p.fields, p.raw)

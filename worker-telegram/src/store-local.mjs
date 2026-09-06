@@ -155,6 +155,20 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
       schedule(); notify('decisions')
     },
     setStage(id, stage) { db.stages[id] = stage; schedule(); notify('decisions') },
+    /**
+     * Remet une annonce écartée dans le deck. Un filtre trop serré, ou une
+     * annonce mal lue mais exploitable, ne doit pas rester bloquée : on force
+     * son statut sans toucher aux règles, qui restent valables pour les autres.
+     */
+    restore(id) {
+      const l = byKey.get(id)
+      if (!l) return false
+      l.status = 'inbox'
+      l.reasons = []
+      schedule(); notify('listings')
+      return true
+    },
+
     // Efface les décisions sans toucher aux annonces captées : on re-trie un
     // parc déjà ingéré, on ne le perd pas.
     resetDecisions() { db.decisions = {}; db.stages = {}; db.notes = {}; schedule(); notify('decisions') },

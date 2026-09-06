@@ -432,12 +432,41 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
 .lightbox .side.l { left: 0; } .lightbox .side.r { right: 0; }
 
 /* Tri du deck */
-.sortbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.sortbar {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+  padding-bottom: 14px; border-bottom: 1px solid var(--edge-soft);
+}
 .sortbar label { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
 .sortbar select {
   padding: 6px 9px; border-radius: 8px; border: 1px solid var(--edge);
   background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer;
 }
+
+/* ── Volets : tout tient sur un seul écran ─────────────────────────────── */
+.panes { display: flex; align-items: center; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.pane {
+  display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 9px;
+  border: 1px solid var(--edge); background: var(--surface); cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--ink-3);
+}
+.pane:hover { color: var(--ink); }
+.pane[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); background: var(--accent-wash); }
+.pane em { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.pane[aria-pressed="true"] em { color: var(--accent); }
+.settings-btn { margin-left: auto; }
+
+/* Tiroir : ce qu'on règle une fois puis qu'on oublie ne mérite pas une page. */
+.drawer-scrim { position: fixed; inset: 0; z-index: 250; background: rgba(8,7,6,.55); backdrop-filter: blur(2px); }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 260; width: min(580px, 100%);
+  display: flex; flex-direction: column; background: var(--bg); border-left: 1px solid var(--edge);
+  box-shadow: -24px 0 60px -30px rgba(0,0,0,.6);
+}
+.drawer-head { display: flex; align-items: center; gap: 12px; padding: 15px 20px; border-bottom: 1px solid var(--edge); background: var(--nav); }
+.drawer-head b { flex: 1; font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+.drawer-body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px 30px; display: flex; flex-direction: column; gap: 16px; }
+.drawer-body .split { display: block; }
+.drawer-body .panel + .panel { margin-top: 16px; }
 
 /* ── Mode sourcing : plein écran, une modèle à la fois ──────────────────── */
 .focus { position: fixed; inset: 0; z-index: 300; display: grid; grid-template-rows: 1fr auto; background: var(--bg); }
@@ -582,29 +611,36 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
   
 
   <!-- ── À trier ──────────────────────────────────────────────────────── -->
-  <section id="p-deck" role="tabpanel" aria-labelledby="tab-deck">
+  <div class="panes" id="panes">
+    <button class="pane" data-p="todo" aria-pressed="true">À trier <em id="n-todo">0</em></button>
+    <button class="pane" data-p="fav"  aria-pressed="false">Favoris <em id="n-fav">0</em></button>
+    <button class="pane" data-p="out"  aria-pressed="false">Écartées <em id="n-out">0</em></button>
+    <button class="btn settings-btn" id="open-settings">⚙ Salons &amp; filtres</button>
+  </div>
+
+  <section id="p-deck">
+        <div class="sortbar">
+      <div class="viewtabs" id="viewtabs">
+        <button data-v="deck" aria-pressed="true">Une par une</button>
+        <button data-v="list" aria-pressed="false">Liste</button>
+      </div>
+      <button class="btn primary" id="open-focus" style="margin-left:2px">▸ Mode sourcing</button>
+      <label for="sort-by">Trier</label>
+      <select id="sort-by">
+        <option value="auto">Affinité (ou récentes)</option>
+        <option value="recent">Plus récentes</option>
+        <option value="old">Plus anciennes</option>
+        <option value="price-asc">Prix croissant</option>
+        <option value="price-desc">Prix décroissant</option>
+        <option value="english">Meilleur anglais</option>
+        <option value="hours">Plus d’heures / jour</option>
+        <option value="age-asc">Plus jeunes</option>
+      </select>
+      <label for="sort-salon" style="margin-left:6px">Salon</label>
+      <select id="sort-salon"><option value="all">Tous</option></select>
+    </div>
     <div class="split" id="deck-split">
       <div>
-        <div class="sortbar">
-          <div class="viewtabs" id="viewtabs">
-            <button data-v="deck" aria-pressed="true">Une par une</button>
-            <button data-v="list" aria-pressed="false">Liste</button>
-          </div>
-          <button class="btn primary" id="open-focus" style="margin-left:2px">▸ Mode sourcing</button>
-          <label for="sort-by">Trier</label>
-          <select id="sort-by">
-            <option value="auto">Affinité (ou récentes)</option>
-            <option value="recent">Plus récentes</option>
-            <option value="old">Plus anciennes</option>
-            <option value="price-asc">Prix croissant</option>
-            <option value="price-desc">Prix décroissant</option>
-            <option value="english">Meilleur anglais</option>
-            <option value="hours">Plus d’heures / jour</option>
-            <option value="age-asc">Plus jeunes</option>
-          </select>
-          <label for="sort-salon" style="margin-left:6px">Salon</label>
-          <select id="sort-salon"><option value="all">Tous</option></select>
-        </div>
         <div class="stage" id="stage"></div>
         <div class="listwrap" id="listwrap"></div>
         <p class="hint">Glisse la carte, ou <kbd class="key">←</kbd> pass · <kbd class="key">→</kbd> match · <kbd class="key">↓</kbd> plus tard · <kbd class="key">espace</kbd> passe en mode sourcing plein écran</p>
@@ -626,63 +662,23 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
           </div>
         </div>
 
-        <div class="panel" id="filtered-panel">
-          <div class="panel-head">
-            <div>
-              <h2><span id="filtered-count">0</span> annonces écartées par tes filtres</h2>
-              <p>Elles n’entrent pas dans le deck. Vérifie ici que tes règles ne sont pas trop serrées.</p>
-            </div>
-            <div class="right"><button class="btn" id="toggle-filtered">Voir</button></div>
-          </div>
-          <div id="filtered-list" class="hidden"></div>
-        </div>
       </div>
     </div>
   </section>
 
-  <!-- ── Favoris ──────────────────────────────────────────────────────── -->
-  <section id="p-fav" role="tabpanel" aria-labelledby="tab-fav" class="hidden">
+  <section id="p-fav" class="hidden">
     <div class="stage-filter" id="stage-filter"></div>
     <div class="favs" id="favs"></div>
   </section>
 
-  <!-- ── Coller ───────────────────────────────────────────────────────── -->
-  <section id="p-paste" role="tabpanel" aria-labelledby="tab-paste" class="hidden">
-    <div class="split" style="grid-template-columns: minmax(0,1fr) minmax(0,1fr)">
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Colle un message de ton salon</h2>
-            <p>Copie une annonce depuis Telegram et colle-la ici. C’est le même lecteur que celui du worker&nbsp;: ce que tu vois à droite est ce qui arriverait en base.</p>
-          </div>
-        </div>
-        <div class="panel-body">
-          <textarea class="paste" id="paste" spellcheck="false" placeholder="🌟 Model Listing 🌟&#10;&#10;📋 Listing ID #8260&#10;🎂 Age: 23&#10;🌍 Origin: Chile&#10;…"></textarea>
-          <div style="display:flex; gap:8px; margin-top:11px; flex-wrap:wrap">
-            <button class="btn primary" id="do-parse">Lire l’annonce</button>
-            <button class="btn" id="do-add" disabled>Ajouter au deck</button>
-            <button class="btn" id="do-sample">Charger un exemple</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Ce que le lecteur a compris</h2>
-            <p id="parse-sub">Chaque libellé reconnu devient un champ typé. Ce qui n’est pas reconnu est gardé en jaune&nbsp;— c’est ce qui te dit quel alias ajouter.</p>
-          </div>
-          <div class="right"><span class="tag" id="parse-tag">En attente</span></div>
-        </div>
-        <div class="panel-body" id="parse-out">
-          <p style="color:var(--ink-3)">Colle un message à gauche, puis <b>Lire l’annonce</b>.</p>
-        </div>
-      </div>
-    </div>
+  <section id="p-out" class="hidden">
+    <div class="rowlist" id="out-list"></div>
   </section>
 
-  <!-- ── Salons ───────────────────────────────────────────────────────── -->
-  <section id="p-salons" role="tabpanel" aria-labelledby="tab-salons" class="hidden">
+  <div class="drawer-scrim hidden" id="drawer-scrim"></div>
+  <aside class="drawer hidden" id="drawer">
+    <div class="drawer-head"><b>Salons &amp; filtres</b><button class="btn" id="close-drawer">Fermer</button></div>
+    <div class="drawer-body">
     <div class="split" style="grid-template-columns: minmax(0,1fr) minmax(0,1fr)">
       <div class="panel">
         <div class="panel-head">
@@ -700,10 +696,6 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
         <div class="dialogs" id="dialog-list"></div>
       </div>
     </div>
-  </section>
-
-  <!-- ── Filtres ──────────────────────────────────────────────────────── -->
-  <section id="p-filters" role="tabpanel" aria-labelledby="tab-filters" class="hidden">
     <div class="split" style="grid-template-columns: minmax(0,440px) minmax(0,1fr)">
       <div class="panel">
         <div class="panel-head">
@@ -745,7 +737,8 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
         </div>
       </div>
     </div>
-  </section>
+    </div>
+  </aside>
 
   <footer>
     Module <b>Talents</b> de ScaleFlow, en local. Annonces, photos et décisions vivent dans <code>worker-telegram/data/</code> sur cette machine&nbsp;— rien ne part ailleurs. Sauvegarder ton travail&nbsp;: copie ce dossier.
@@ -1025,7 +1018,7 @@ const state = {
   stats: { duplicates: 0 },
   telegram: { connected: false, demo: false, me: null },
   dialogs: null, dialogQuery: '',
-  history: [], tab: 'deck', view: 'deck', stageFilter: 'all', showFiltered: false,
+  history: [], pane: 'todo', view: 'deck', stageFilter: 'all',
   sortBy: 'auto', salonFilter: 'all', focus: null,
 };
 
@@ -1160,8 +1153,13 @@ function render() {
 
   renderStatus();
 
-  for (const [tab, panel] of [['deck','p-deck'],['fav','p-fav'],['paste','p-paste'],['salons','p-salons'],['filters','p-filters']]) {
-    $('#' + panel).classList.toggle('hidden', state.tab !== tab);
+  $('#n-todo').textContent = d.length;
+  $('#n-fav').textContent = fav.length;
+  $('#n-out').textContent = fo.length + reviewList().length;
+  $('#panes').querySelectorAll('.pane').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.p === state.pane)));
+  for (const [pane, panel] of [['todo','p-deck'],['fav','p-fav'],['out','p-out']]) {
+    $('#' + panel).classList.toggle('hidden', state.pane !== pane);
   }
 
   const sel = $('#sort-salon');
@@ -1172,6 +1170,12 @@ function render() {
     sel.innerHTML = '<option value="all">Tous</option>' + names.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
     sel.value = names.includes(state.salonFilter) ? state.salonFilter : 'all';
     if (sel.value === 'all') state.salonFilter = 'all';
+  }
+
+  if (state.pane !== 'todo') {
+    renderNav(); renderFavs(fav); renderSalons(); renderFilterPreview();
+    if (state.pane === 'out') renderOut();
+    return;
   }
 
   // Une carte à la fois, ou tout le parc en liste : le même deck, deux lectures.
@@ -1187,7 +1191,6 @@ function render() {
   if (listMode) renderList(d); else renderDeck(d);
   renderNav();
   renderSort();
-  renderFilteredList(fo);
   renderFavs(fav);
   renderSalons();
   renderFilterPreview();
@@ -1410,14 +1413,8 @@ const NAV = [
   ]},
   { group: 'Créatrices', items: [
     { k: 'soon', label: 'Créatrices' },
-    { k: 'deck', label: 'Talents', count: () => deck().length },
-    { k: 'fav', label: 'Favoris', count: () => favorites().length },
+    { k: 'todo', label: 'Talents', count: () => deck().length },
     { k: 'soon', label: 'Banque' },
-  ]},
-  { group: 'Sourcing', items: [
-    { k: 'paste', label: 'Coller une annonce' },
-    { k: 'salons', label: 'Salons', count: () => state.salons.length },
-    { k: 'filters', label: 'Filtres' },
   ]},
   { group: 'Équipe', items: [
     { k: 'soon', label: 'Employees' }, { k: 'soon', label: 'SOP' }, { k: 'soon', label: 'Permissions' },
@@ -1430,19 +1427,14 @@ function renderNav() {
     '<div class="nav-group">' + esc(g.group) + '</div>'
     + g.items.map(it => it.k === 'soon'
         ? '<button class="nav-item soon" disabled><span class="lbl">' + esc(it.label) + '</span><span class="cnt">BIENTÔT</span></button>'
-        : '<button class="nav-item" data-tab="' + it.k + '"' + (state.tab === it.k ? ' aria-current="page"' : '') + '>'
+        : '<button class="nav-item" data-tab="' + it.k + '"' + (state.pane === it.k ? ' aria-current="page"' : '') + '>'
             + '<span class="lbl">' + esc(it.label) + '</span>'
             + (it.count ? '<span class="cnt">' + it.count() + '</span>' : '') + '</button>'
       ).join('')
   ).join('');
-  nav.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {
-    state.tab = b.dataset.tab;
-    if (state.tab === 'salons' && !state.dialogs) loadDialogs();
-    render();
-  });
+  nav.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { state.pane = b.dataset.tab; render(); });
 
-  const TITLES = { deck: 'Talents', fav: 'Favoris', paste: 'Coller une annonce', salons: 'Salons', filters: 'Filtres' };
-  $('#page-title').textContent = TITLES[state.tab] || 'Talents';
+  $('#page-title').textContent = { todo: 'Talents', fav: 'Favoris', out: 'Écartées' }[state.pane] || 'Talents';
 
   const t = state.telegram;
   $('#side-foot').innerHTML = t.demo
@@ -1737,21 +1729,6 @@ function renderSort() {
 }
 
 /* ── Écartées ───────────────────────────────────────────────────────────── */
-function renderFilteredList(fo) {
-  $('#filtered-count').textContent = fo.length;
-  $('#filtered-panel').classList.toggle('hidden', fo.length === 0);
-  const list = $('#filtered-list');
-  list.classList.toggle('hidden', !state.showFiltered);
-  $('#toggle-filtered').textContent = state.showFiltered ? 'Masquer' : 'Voir';
-  if (!state.showFiltered) return;
-  list.style.maxHeight = '320px';
-  list.style.overflowY = 'auto';
-  list.innerHTML = fo.slice(0, 80).map(l =>
-    '<div class="filtered-row"><span>' + esc(titleOf(l)) + '</span>'
-    + '<span class="why">' + esc(l.reasons[0]) + '</span>'
-    + '<span class="pr">' + esc(money(l.fields.price)) + '</span></div>').join('');
-}
-
 /* ── Favoris ────────────────────────────────────────────────────────────── */
 function renderFavs(fav) {
   const sf = $('#stage-filter');
@@ -1798,6 +1775,50 @@ function renderFavs(fav) {
     state.history = state.history.filter(h => h.id !== b.dataset.id);
     render();
     api('undecide', { id: b.dataset.id }).catch(() => {});
+  });
+}
+
+/* ── Volet « Écartées » ────────────────────────────────────────────────── */
+// Deux façons de ne pas atteindre le deck : rejetée par un filtre, ou mal lue.
+// Dans les deux cas il faut pouvoir vérifier qu'on ne rate rien, et remettre à
+// trier ce qui a été écarté à tort.
+function renderOut() {
+  const fo = filteredOut(), rv = reviewList();
+  const box = $('#out-list');
+  if (!fo.length && !rv.length) {
+    box.innerHTML = '<div class="empty"><h3>Rien d’écarté</h3>'
+      + '<p>Aucune annonce retirée par tes filtres, et toutes ont été lues correctement.</p></div>';
+    return;
+  }
+  const COLS = 'grid-template-columns:52px minmax(120px,1.6fr) 96px minmax(150px,1fr) 140px';
+  const row = (l, why, tone) =>
+    '<div class="listrow" style="' + COLS + '">'
+    + (l.photos?.length
+        ? '<button class="ph" data-zoom="' + esc(l.id) + '" title="Voir en grand"><img src="' + esc(l.photos[0].url) + '" alt=""></button>'
+        : '<span class="ph" style="background:' + tint(l) + '"></span>')
+    + '<span class="who"><b>' + esc(titleOf(l)) + '</b><span>' + esc(salonTitleOf(l)) + ' · ' + ago(l.postedAt) + '</span></span>'
+    + '<span class="num lead">' + esc(money(l.fields.price)) + '</span>'
+    + '<span style="font-size:11.5px;color:var(--' + tone + ')">' + esc(why) + '</span>'
+    + '<span class="acts"><button class="m" data-restore="' + esc(l.id) + '">Remettre à trier</button></span>'
+    + '</div>';
+
+  box.innerHTML =
+    (fo.length ? '<div class="rowhead" style="' + COLS + '"><span></span>'
+      + '<span>Écartées par tes filtres · ' + fo.length + '</span><span>Prix</span><span>Raison</span><span></span></div>'
+      + fo.slice(0, 200).map(l => row(l, l.reasons[0] || '', 'pass')).join('') : '')
+    + (rv.length ? '<div class="rowhead" style="' + COLS + '"><span></span>'
+      + '<span>Mal lues · ' + rv.length + '</span><span>Prix</span><span>Ce qui manque</span><span></span></div>'
+      + rv.slice(0, 100).map(l => row(l, 'lue à ' + Math.round(l.confidence * 100) + ' % — libellés inconnus', 'later')).join('') : '');
+
+  box.querySelectorAll('[data-zoom]').forEach(b => b.onclick = () => {
+    const l = state.listings.find(x => x.id === b.dataset.zoom);
+    if (l) openFocus(l.id);
+  });
+  box.querySelectorAll('[data-restore]').forEach(b => b.onclick = async () => {
+    b.textContent = '…'; b.disabled = true;
+    await api('restore', { id: b.dataset.restore });
+    state.pane = 'todo';
+    await refresh();
   });
 }
 
@@ -1896,11 +1917,25 @@ function renderFilterPreview() {
 $('#sort-by').onchange = e => { state.sortBy = e.target.value; render(); };
 $('#viewtabs').querySelectorAll('button').forEach(b => b.onclick = () => { state.view = b.dataset.v; render(); });
 $('#open-focus').onclick = () => openFocus();
+
+$('#panes').querySelectorAll('.pane').forEach(b => b.onclick = () => { state.pane = b.dataset.p; render(); });
+
+function openDrawer() {
+  $('#drawer').classList.remove('hidden');
+  $('#drawer-scrim').classList.remove('hidden');
+  if (!state.dialogs) loadDialogs();
+}
+function closeDrawer() {
+  $('#drawer').classList.add('hidden');
+  $('#drawer-scrim').classList.add('hidden');
+}
+$('#open-settings').onclick = openDrawer;
+$('#close-drawer').onclick = closeDrawer;
+$('#drawer-scrim').onclick = closeDrawer;
 $('#sort-salon').onchange = e => { state.salonFilter = e.target.value; render(); };
 
 $('#reload-dialogs').onclick = () => { state.dialogs = null; loadDialogs(); };
 $('#dialog-search').oninput = e => { state.dialogQuery = e.target.value; renderSalons(); };
-$('#toggle-filtered').onclick = () => { state.showFiltered = !state.showFiltered; render(); };
 
 $('#reset').onclick = async () => {
   if (!confirm('Effacer toutes tes décisions ? Les annonces captées et tes salons restent en place.')) return;
@@ -1921,6 +1956,11 @@ $('#undo').onclick = () => {
 document.addEventListener('keydown', e => {
   if (e.target.closest('input, textarea, select')) return;
 
+  if (!$('#drawer').classList.contains('hidden')) {
+    if (e.key === 'Escape') { e.preventDefault(); closeDrawer(); }
+    return;
+  }
+
   // En mode sourcing, le clavier pilote tout : trancher enchaîne sur la suivante.
   if (state.focus) {
     if (e.key === 'Escape') { e.preventDefault(); closeFocus(); }
@@ -1931,7 +1971,7 @@ document.addEventListener('keydown', e => {
     else if (e.key === 'e' || e.key === 'E') { e.preventDefault(); focusPhoto(1); }
     return;
   }
-  if (state.tab !== 'deck' || busy) return;
+  if (state.pane !== 'todo' || busy) return;
 
   if (e.key === ' ') { e.preventDefault(); openFocus(); return; }
   const d = e.key === 'ArrowLeft' ? 'pass' : e.key === 'ArrowRight' ? 'match' : e.key === 'ArrowDown' ? 'later' : null;
@@ -1941,67 +1981,6 @@ document.addEventListener('keydown', e => {
   const el = $('#stage .card:not(.ghost)');
   if (top && el) fire(top, d, el);
 });
-
-/* ── Coller ─────────────────────────────────────────────────────────────── */
-$('#do-sample').onclick = () => { $('#paste').value = sampleText(97); $('#do-parse').click(); };
-
-$('#do-parse').onclick = () => {
-  const raw = $('#paste').value;
-  const p = parseListing(raw);
-  state.parsed = p;
-  const out = $('#parse-out');
-  const tag = $('#parse-tag');
-
-  if (!raw.trim()) {
-    tag.textContent = 'En attente'; tag.className = 'tag';
-    out.innerHTML = '<p style="color:var(--ink-3)">Colle un message à gauche, puis <b>Lire l’annonce</b>.</p>';
-    $('#do-add').disabled = true;
-    return;
-  }
-
-  const known = Object.entries(p.fields).filter(([, v]) => v != null && v !== '');
-  const unknown = Object.entries(p.unknown);
-  tag.textContent = Math.round(p.confidence * 100) + ' % lu';
-  tag.className = 'tag' + (p.isListing ? ' live' : '');
-
-  const fmt = (k, v) => {
-    const t = FIELD_BY_KEY[k]?.type;
-    if (t === 'money') return money(v);
-    if (t === 'hours') return v.hours != null ? v.hours + ' h/jour' : v.raw;
-    if (t === 'bool') return v === true ? 'oui' : v === false ? 'non' : '—';
-    if (Array.isArray(v)) return v.join(' · ');
-    return String(v);
-  };
-
-  out.innerHTML =
-    (p.isListing
-      ? '<div class="note ok">Annonce reconnue — ' + known.length + ' champs lus. Elle peut entrer dans le deck.</div>'
-      : '<div class="note bad">Pas assez de champs reconnus pour en faire une annonce. Si c’en est bien une, ses libellés sont à ajouter au dictionnaire (<code>shared/talents/fields.mjs</code>).</div>')
-    + '<div class="parsed" style="margin-top:12px">'
-      + known.map(([k, v]) => '<div class="pf"><span>' + esc(FIELD_BY_KEY[k]?.label || k) + '</span><b>' + esc(fmt(k, v)) + '</b></div>').join('')
-      + unknown.map(([k, v]) => '<div class="pf unknown"><span>non reconnu · ' + esc(k) + '</span><b>' + esc(v) + '</b></div>').join('')
-    + '</div>'
-    + '<p style="margin-top:12px;font-size:11.5px;color:var(--ink-3);font-family:var(--font-mono)">clé de dédoublonnage · ' + esc(dedupeKey(p.fields, raw)) + '</p>';
-
-  $('#do-add').disabled = !p.isListing;
-};
-
-$('#do-add').onclick = async () => {
-  const out = $('#parse-out');
-  try {
-    const r = await api('paste', { raw: $('#paste').value });
-    if (r.ok) {
-      out.insertAdjacentHTML('afterbegin', '<div class="note ok" style="margin-bottom:10px">Ajoutée. Va la trancher dans l’onglet « À trier ».</div>');
-      $('#paste').value = '';
-      $('#do-add').disabled = true;
-    } else {
-      out.insertAdjacentHTML('afterbegin', '<div class="note bad" style="margin-bottom:10px">' + esc(r.why || 'Non ajoutée') + '</div>');
-    }
-    await refresh();
-  } catch (e) {
-    out.insertAdjacentHTML('afterbegin', '<div class="note bad" style="margin-bottom:10px">Worker injoignable : ' + esc(e.message) + '</div>');
-  }
-};
 
 /* ── Filtres ────────────────────────────────────────────────────────────── */
 function syncFilterForm() {
@@ -2031,7 +2010,7 @@ $('#apply-filters').onclick = async () => {
   state.prefs.max_age = num($('#f-agemax').value);
   state.prefs.min_hours = num($('#f-hours').value);
   state.prefs.blocked_countries = $('#f-countries').value.split(',').map(s => s.trim()).filter(Boolean);
-  state.tab = 'deck';
+  closeDrawer();
   await api('prefs', { prefs: state.prefs });
   await refresh();
 };

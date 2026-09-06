@@ -49,13 +49,17 @@ npm start
 
 Tout est écrit dans `.env` automatiquement. Rien à copier-coller.
 
-Puis `npm start` ouvre <http://localhost:8787>. Va dans l'onglet **Salons** :
-tes salons Telegram sont listés, clique **Écouter** sur les marketplaces qui
-t'intéressent. C'est fini — les annonces arrivent toutes seules, photos
+Puis `npm start` ouvre <http://localhost:8787>. Bouton **⚙ Salons & filtres**
+en haut à droite : tes salons Telegram y sont listés, clique **Écouter** sur les
+marketplaces qui t'intéressent. C'est fini — les annonces arrivent toutes seules, photos
 comprises, et apparaissent dans la page sans la rafraîchir.
 
+Tout tient sur un écran : **À trier**, **Favoris** et **Écartées** sont trois
+volets du même écran, et les réglages (salons, filtres) vivent dans le tiroir
+**⚙ Salons & filtres**.
+
 **Rattraper l'historique** d'un salon que tu viens d'ajouter : bouton
-**Rattraper** en face de son nom, ou `npm run backfill` au démarrage pour tous.
+**Rattraper** en face de son nom (dans le tiroir), ou `npm run backfill` au démarrage pour tous.
 Un rattrapage complète aussi les photos manquantes des annonces déjà captées,
 sans toucher à tes décisions — et saute celles qui ont déjà les leurs, donc un
 second passage est quasi instantané.
@@ -142,10 +146,10 @@ complète les photos manquantes des annonces déjà captées.
 
 ## Quand un salon n'est pas lu correctement
 
-Chaque marketplace écrit ses libellés à sa façon. Si un salon remplit peu de
-champs, ouvre l'onglet **Coller une annonce**, colle un de ses messages, et
-regarde ce que le lecteur a compris : ce qui apparaît **en jaune** est un
-libellé qu'il ne connaît pas.
+Chaque marketplace écrit ses libellés à sa façon. Le volet **Écartées** liste
+les annonces « mal lues » : trop peu de champs reconnus pour entrer dans le
+deck. Ouvre `data/db.json` sur l'une d'elles et compare son `raw` à ses
+`fields` — les libellés absents des `fields` sont ceux que le lecteur ignore.
 
 Ajoute-le dans `aliases` du champ correspondant, dans
 `shared/talents/fields.mjs` :
