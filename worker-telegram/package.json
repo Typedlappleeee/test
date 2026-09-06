@@ -1,0 +1,19 @@
+{
+  "name": "scaleflow-talent-worker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Ingestion des annonces de modèles depuis les salons Telegram vers Supabase",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "login": "node src/login.mjs",
+    "start": "node src/index.mjs",
+    "backfill": "node src/index.mjs --backfill",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
+    "telegram": "^2.26.22",
+    "input": "^1.0.1"
+  }
+}
