@@ -9,6 +9,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, renameSync } from '
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { hardFilter, DEFAULT_PREFS } from '../../shared/talents/score.mjs'
+import { visionFilter } from './vision.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -98,8 +99,14 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
       })
     },
 
+    /** Chemin disque d'une photo, à partir de l'URL servie à l'interface. */
+    pathOf(photo) {
+      const m = String(photo?.url || '').match(/^\/photos\/(.+)$/)
+      return m ? join(photosDir, m[1]) : null
+    },
+
     // ── Annonces ──────────────────────────────────────────────────────────
-    async saveListing({ salonId, salonTitle, msgId, parsed, photos, postedAt, prefs }) {
+    async saveListing({ salonId, salonTitle, msgId, parsed, photos, vision, postedAt, prefs }) {
       const existing = byKey.get(parsed.dedupeKey)
       if (existing) {
         db.stats.duplicates++
@@ -107,13 +114,15 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
         schedule(); notify('listings')
         return 'duplicate'
       }
-      const reasons = hardFilter(parsed.fields, prefs)
+      // Les critères visuels s'ajoutent aux critères de texte : même statut,
+              // même volet « Écartées », même bouton pour remettre à trier.
+              const reasons = [...hardFilter(parsed.fields, prefs), ...visionFilter(vision, prefs)]
       const row = {
         id: parsed.dedupeKey, key: parsed.dedupeKey,
         salonId, salonTitle, msgId,
         listingId: parsed.fields.listing_id ?? null,
         postedAt: new Date(postedAt).getTime(),
-        raw: parsed.raw, fields: parsed.fields, photos,
+        raw: parsed.raw, fields: parsed.fields, photos, vision: vision ?? null,
         confidence: Number(parsed.confidence.toFixed(3)),
         status: !parsed.isListing || parsed.confidence < 0.35 ? 'review' : reasons.length ? 'filtered' : 'inbox',
         reasons, seenIn: [salonTitle],
@@ -130,6 +139,19 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
     hasPhotos(key) {
       const l = byKey.get(key)
       return !!(l && l.photos?.length)
+    },
+
+    /** Attache une analyse de photos à une annonce, et rejoue ses filtres. */
+    setVision(id, vision) {
+      const l = byKey.get(id)
+      if (!l) return false
+      l.vision = vision
+      if (l.status !== 'review') {
+        l.reasons = [...hardFilter(l.fields, db.prefs), ...visionFilter(vision, db.prefs)]
+        l.status = l.reasons.length ? 'filtered' : 'inbox'
+      }
+      schedule(); notify('listings')
+      return true
     },
 
     /** Ajoute les photos à une annonce déjà enregistrée qui n'en avait pas. */
@@ -181,11 +203,14 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
       db.prefs = { ...DEFAULT_PREFS, ...prefs }
       for (const l of db.listings) {
         if (l.status === 'review') continue
-        l.reasons = hardFilter(l.fields, db.prefs)
+        l.reasons = [...hardFilter(l.fields, db.prefs), ...visionFilter(l.vision, db.prefs)]
         l.status = l.reasons.length ? 'filtered' : 'inbox'
       }
       schedule(); notify('listings')
     },
+
+    /** Force une notification : l'avancement d'une analyse n'est pas un écrit. */
+    touch() { notify('progress') },
 
     flush() { if (dirty) persist() },
   }

@@ -10,6 +10,7 @@
 // est la même.
 import { createHash } from 'node:crypto'
 import { parseListing, dedupeKey } from '../../shared/talents/parse.mjs'
+import { analyzeListing } from './vision.mjs'
 
 export const ALBUM_WAIT_MS = 2500
 export const MAX_PHOTOS = 4
@@ -73,6 +74,15 @@ export function createIngestor({ client, store, log = console.log }) {
       ? await store.savePhotos(photos, parsed.dedupeKey.replace(/[^a-z0-9]/gi, ''))
       : []
 
+    // Lecture des photos, si elle est activée dans les réglages. Elle ajoute
+    // ~50 ms par image ; on ne la fait donc qu'une fois, à l'ingestion.
+    let vision = null
+    const prefs = await store.prefs()
+    if (prefs.vision_enabled && stored.length) {
+      try { vision = await analyzeListing(stored.map(p => store.pathOf(p)).filter(Boolean), log) }
+      catch (e) { log('  lecture des photos indisponible : ' + e.message) }
+    }
+
     const res = await store.saveListing({
       salonId: salon.id,
       salonTitle: salon.title,
@@ -80,8 +90,9 @@ export function createIngestor({ client, store, log = console.log }) {
       groupedId: first.groupedId ?? null,
       parsed,
       photos: stored,
+      vision,
       postedAt: new Date((Number(first.date) || Date.now() / 1000) * 1000).toISOString(),
-      prefs: await store.prefs(),
+      prefs,
     })
 
     // Une annonce déjà en base mais sans photo doit pouvoir les récupérer :

@@ -576,6 +576,24 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
   .rowhead .hide, .listrow .hide { display: none; }
 }
 
+/* Étiquettes lues sur la photo : leur opacité dit la confiance du modèle,
+   pour qu'un signal faible ne se lise pas comme un fait établi. */
+.vchip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px;
+  font-size: 10.5px; font-weight: 700; white-space: nowrap;
+  border: 1px dashed var(--edge); background: var(--surface-2); color: var(--ink-2);
+}
+.vchip b { font-family: var(--font-mono); font-weight: 500; font-size: 9.5px; color: var(--ink-3); }
+.vchip.sure { border-style: solid; border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
+.vchip.sure b { color: var(--accent); opacity: .75; }
+
+.vision-box { display: flex; flex-direction: column; gap: 10px; }
+.vision-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; align-items: center; font-size: 12.5px; }
+.vision-row > span { color: var(--ink-2); }
+.vision-row select { padding: 6px 9px; border-radius: 8px; border: 1px solid var(--edge); background: var(--surface-2); font-size: 12.5px; cursor: pointer; }
+.vision-prog { height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.vision-prog i { display: block; height: 100%; background: var(--accent); transition: width .3s ease; }
+
 .search { width: 100%; padding: 8px 11px; border-radius: 9px; border: 1px solid var(--edge); background: var(--surface-2); font-size: 13px; }
 </style>
 
@@ -697,6 +715,17 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
       </div>
     </div>
     <div class="split" style="grid-template-columns: minmax(0,440px) minmax(0,1fr)">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Lire les photos</h2>
+            <p>Un modèle tourne sur cette machine et repère ce que la photo montre. Aucune image n’est envoyée ailleurs.</p>
+          </div>
+          <div class="right"><button class="btn" id="run-vision">Analyser</button></div>
+        </div>
+        <div class="panel-body" id="vision-panel"></div>
+      </div>
+
       <div class="panel">
         <div class="panel-head">
           <div>
@@ -1173,7 +1202,7 @@ function render() {
   }
 
   if (state.pane !== 'todo') {
-    renderNav(); renderFavs(fav); renderSalons(); renderFilterPreview();
+    renderNav(); renderFavs(fav); renderSalons(); renderVisionPanel(); renderFilterPreview();
     if (state.pane === 'out') renderOut();
     return;
   }
@@ -1193,6 +1222,7 @@ function render() {
   renderSort();
   renderFavs(fav);
   renderSalons();
+  renderVisionPanel();
   renderFilterPreview();
 }
 
@@ -1296,7 +1326,7 @@ function cardEl(l) {
         + '<div class="stat"><span>Anglais</span><b>' + englishOf(f) + '</b></div>'
         + '<div class="stat"><span>Heures / jour</span><b>' + (f.hours_per_day?.hours != null ? f.hours_per_day.hours + ' h' : esc(f.hours_per_day?.raw ?? '—')) + '</b></div>'
       + '</div>'
-      + (chips.length ? '<div class="chips">' + chips.map(c => '<span class="chip ' + c[0] + '">' + esc(c[1]) + '</span>').join('') + '</div>' : '')
+      + ((chips.length || l.vision) ? '<div class="chips">' + chips.map(c => '<span class="chip ' + c[0] + '">' + esc(c[1]) + '</span>').join('') + visionChips(l) + '</div>' : '')
       + (rows.length ? '<dl class="rows">' + rows.map(r => '<div class="row"><dt>' + r[0] + '</dt><dd class="' + r[2] + '">' + esc(r[1]) + '</dd></div>').join('') + '</dl>' : '')
     + '</div>'
     + '<div class="actions">'
@@ -1492,7 +1522,7 @@ function renderList(d) {
           + '<span class="num hide">' + esc(money(f.salary)) + '</span>'
           + '<span class="num hide">' + esc(englishOf(f)) + '</span>'
           + '<span class="num hide">' + (f.hours_per_day?.hours != null ? f.hours_per_day.hours + ' h' : '—') + '</span>'
-          + '<span class="tags hide">' + tags.map(t => '<span class="chip ' + t[0] + '">' + esc(t[1]) + '</span>').join('') + '</span>'
+          + '<span class="tags hide">' + tags.map(t => '<span class="chip ' + t[0] + '">' + esc(t[1]) + '</span>').join('') + visionChips(l) + '</span>'
           + '<span class="acts">'
             + '<button class="p" data-d="pass">Pass</button>'
             + '<button class="l" data-d="later" title="Plus tard">↓</button>'
@@ -1664,7 +1694,7 @@ function renderFocus() {
           + '<div class="stat"><span>Anglais</span><b>' + esc(englishOf(f)) + '</b></div>'
           + '<div class="stat"><span>Heures / jour</span><b>' + (f.hours_per_day?.hours != null ? f.hours_per_day.hours + ' h' : esc(f.hours_per_day?.raw ?? '—')) + '</b></div>'
         + '</div>'
-        + (chips.length ? '<div class="chips">' + chips.map(c => '<span class="chip ' + c[0] + '">' + esc(c[1]) + '</span>').join('') + '</div>' : '')
+        + ((chips.length || l.vision) ? '<div class="chips">' + chips.map(c => '<span class="chip ' + c[0] + '">' + esc(c[1]) + '</span>').join('') + visionChips(l) + '</div>' : '')
         + (rows.length ? '<dl class="rows" style="margin-top:14px">' + rows.map(r =>
             '<div class="row"><dt>' + r[0] + '</dt><dd class="' + r[2] + '">' + esc(r[1]) + '</dd></div>').join('') + '</dl>' : '')
       + '</div>'
@@ -1775,6 +1805,68 @@ function renderFavs(fav) {
     state.history = state.history.filter(h => h.id !== b.dataset.id);
     render();
     api('undecide', { id: b.dataset.id }).catch(() => {});
+  });
+}
+
+/* ── Lecture des photos ─────────────────────────────────────────────────── */
+// Les étiquettes issues de la photo se distinguent de celles issues du texte :
+// contour pointillé et pourcentage tant que le modèle n'est pas sûr, plein
+// quand il l'est. Un attribut incertain reste visible mais ne filtre pas.
+function visionChips(l) {
+  const v = l.vision;
+  if (!v) return '';
+  if (v.subject && v.subject !== 'person') {
+    return '<span class="vchip">Photo sans personne</span>';
+  }
+  const attrs = state.visionAttrs || [];
+  return attrs.map(a => {
+    const got = v[a.key];
+    if (!got) return '';
+    return '<span class="vchip' + (got.sure ? ' sure' : '') + '" title="' + esc(a.label)
+      + ' — lu sur la photo, confiance ' + Math.round(got.score * 100) + ' %">'
+      + esc(got.label) + (got.sure ? '' : ' <b>' + Math.round(got.score * 100) + '%</b>') + '</span>';
+  }).join('');
+}
+
+function renderVisionPanel() {
+  const box = $('#vision-panel');
+  if (!box) return;
+  const v = state.vision || {};
+  const attrs = state.visionAttrs || [];
+  const analysed = state.listings.filter(x => x.vision).length;
+  const withPhotos = state.listings.filter(x => x.photos?.length).length;
+
+  $('#run-vision').disabled = v.running || analysed >= withPhotos;
+  $('#run-vision').textContent = v.running ? 'Analyse…' : (analysed >= withPhotos ? 'À jour' : 'Analyser');
+
+  box.innerHTML =
+    (v.running
+      ? '<div class="vision-prog"><i style="width:' + (v.total ? (v.done / v.total) * 100 : 0) + '%"></i></div>'
+        + '<p style="margin:8px 0 12px">Analyse en cours · ' + v.done + ' / ' + v.total + ' annonces.</p>'
+      : '<p style="margin:0 0 12px">' + analysed + ' annonce(s) analysée(s) sur ' + withPhotos + ' avec photos.'
+        + (v.error ? ' <span style="color:var(--pass)">' + esc(v.error) + '</span>' : '') + '</p>')
+    + '<button class="switch" id="s-vision" aria-pressed="' + !!state.prefs.vision_enabled + '">'
+      + '<span class="knob"><i></i></span>Analyser les nouvelles annonces automatiquement</button>'
+    + (attrs.length
+        ? '<div class="vision-box" style="margin-top:14px">'
+          + '<div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)">Filtrer sur ce que montre la photo</div>'
+          + attrs.map(a => '<label class="vision-row"><span>' + esc(a.label) + '</span>'
+              + '<select data-vf="' + esc(a.key) + '">'
+                + '<option value="any">Indifférent</option>'
+                + a.options.map(o => '<option value="' + esc(o.v) + '"'
+                    + ((state.prefs.vision || {})[a.key] === o.v ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('')
+              + '</select></label>').join('')
+          + '<p style="margin:4px 0 0;font-size:11.5px;color:var(--ink-3)">Ce que le modèle lit sur une photo reste une estimation. '
+          + 'Un critère visuel n’écarte une annonce que si le modèle est sûr de lui, et elle reste récupérable dans <b>Écartées</b>.</p>'
+          + '</div>'
+        : '');
+
+  $('#s-vision').onclick = () => {
+    state.prefs.vision_enabled = !state.prefs.vision_enabled;
+    renderVisionPanel();
+  };
+  box.querySelectorAll('[data-vf]').forEach(sel => sel.onchange = () => {
+    state.prefs.vision = { ...(state.prefs.vision || {}), [sel.dataset.vf]: sel.value };
   });
 }
 
@@ -1932,6 +2024,12 @@ function closeDrawer() {
 $('#open-settings').onclick = openDrawer;
 $('#close-drawer').onclick = closeDrawer;
 $('#drawer-scrim').onclick = closeDrawer;
+$('#run-vision').onclick = async () => {
+  $('#run-vision').disabled = true;
+  $('#run-vision').textContent = 'Analyse…';
+  await api('vision/run');
+  setTimeout(refresh, 800);
+};
 $('#sort-salon').onchange = e => { state.salonFilter = e.target.value; render(); };
 
 $('#reload-dialogs').onclick = () => { state.dialogs = null; loadDialogs(); };
@@ -2011,12 +2109,18 @@ $('#apply-filters').onclick = async () => {
   state.prefs.min_hours = num($('#f-hours').value);
   state.prefs.blocked_countries = $('#f-countries').value.split(',').map(s => s.trim()).filter(Boolean);
   closeDrawer();
-  await api('prefs', { prefs: state.prefs });
+  await api('prefs', { prefs: state.prefs });   // vision_enabled et vision inclus
   await refresh();
 };
 
 /* ── Démarrage ──────────────────────────────────────────────────────────── */
-refresh().then(() => { syncFilterForm(); listen(); });
+refresh().then(async () => {
+  syncFilterForm();
+  listen();
+  // La liste des attributs vient du worker : une seule définition, côté module
+  // de vision, que l'interface se contente d'afficher.
+  try { state.visionAttrs = (await api('vision/attributes')).attributes; render(); } catch (e) {}
+});
 </script>
 </body>
 </html>

@@ -4,18 +4,24 @@
   "version": "0.1.0",
   "description": "Écoute les salons Telegram de marketplace, lit les annonces, sert l’interface de tri",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "login": "node src/login.mjs",
     "start": "node src/standalone.mjs",
     "start:demo": "node src/standalone.mjs --demo",
     "start:supabase": "node src/index.mjs",
     "backfill": "node src/standalone.mjs --backfill",
+    "vision": "node src/standalone.mjs --vision",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
-    "telegram": "^2.26.22",
-    "input": "^1.0.1"
+    "input": "^1.0.1",
+    "telegram": "^2.26.22"
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^4.2.0"
   }
 }

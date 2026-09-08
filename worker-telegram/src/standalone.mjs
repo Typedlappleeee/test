@@ -16,6 +16,7 @@ import { makeLocalStore } from './store-local.mjs'
 import { createIngestor } from './ingest.mjs'
 import { parseListing, dedupeKey } from '../../shared/talents/parse.mjs'
 import { hardFilter } from '../../shared/talents/score.mjs'
+import { analyzeListing, ATTRIBUTES } from './vision.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
@@ -56,6 +57,7 @@ const server = createServer(async (req, res) => {
 
   try {
     if (path === '/api/state') return json(res, 200, publicState())
+    if (path === '/api/vision/attributes') return json(res, 200, { attributes: ATTRIBUTES })
 
     if (path === '/api/events') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' })
@@ -80,6 +82,7 @@ const server = createServer(async (req, res) => {
         case '/api/prefs':    store.setPrefs(body.prefs); break
         case '/api/reset-decisions': store.resetDecisions(); break
         case '/api/restore': store.restore(body.id); break
+        case '/api/vision/run': void runVision(); break
         case '/api/salon/add': {
           const row = store.addSalon(body)
           if (row && client) { await watchSalons(); if (BACKFILL_NEW) void backfillOne(row) }
@@ -140,8 +143,43 @@ function publicState() {
     stages: d.stages, notes: d.notes, prefs: d.prefs,
     stats: d.stats,
     telegram: { connected: !!client, demo: DEMO, me: meLabel },
+    vision: visionState,
   }
 }
+
+/* ── Lecture des photos ──────────────────────────────────────────────────── */
+// Analyser tout un parc prend du temps : on annonce l'avancement à l'interface
+// plutôt que de la laisser attendre sans rien dire.
+const visionState = { running: false, done: 0, total: 0, error: null }
+
+async function runVision() {
+  if (visionState.running) return
+  const todo = store.data.listings.filter(l => l.photos?.length && !l.vision)
+  visionState.running = true
+  visionState.done = 0
+  visionState.total = todo.length
+  visionState.error = null
+  store.touch()
+  log(`lecture des photos : ${todo.length} annonce(s) à analyser…`)
+  try {
+    for (const l of todo) {
+      const paths = l.photos.map(p => store.pathOf(p)).filter(Boolean)
+      const v = await analyzeListing(paths, log)
+      store.setVision(l.id, v)
+      visionState.done++
+      if (visionState.done % 5 === 0) store.touch()
+    }
+    log(`lecture des photos terminée : ${visionState.done} annonce(s).`)
+  } catch (e) {
+    visionState.error = e.message
+    log('lecture des photos interrompue : ' + e.message)
+  } finally {
+    visionState.running = false
+    store.touch()
+  }
+}
+
+if (process.argv.includes('--vision')) setTimeout(runVision, 500)
 
 let pushTimer = null
 store.onChange(() => {

@@ -82,6 +82,47 @@ navigateur, c'est le worker qui capte, pas la page.
 
 ---
 
+## Lire les photos
+
+Un modèle de vision (CLIP) tourne **sur ta machine** et repère ce que la photo
+montre : tatouages, silhouette, couleur de cheveux, piercings, type de prise de
+vue. Aucune image n'est envoyée à un service tiers. Le modèle (~90 Mo) se
+télécharge une fois au premier lancement, puis tout fonctionne hors ligne.
+Compter environ 100 ms par photo.
+
+```bash
+npm install @huggingface/transformers   # une fois, ~130 Mo de dépendances
+npm run vision                          # analyse les annonces déjà captées
+```
+
+Puis, dans **⚙ Salons & filtres → Lire les photos**, active *Analyser les
+nouvelles annonces automatiquement* et choisis tes critères.
+
+### Ce que ça vaut, sans enjoliver
+
+Le modèle compare l'image à des descriptions et retient celle qui colle le
+mieux. Il est fiable sur ce qui est net et binaire — des tatouages visibles, une
+couleur de cheveux. Il l'est beaucoup moins sur la morphologie : « forte
+poitrine » n'a pas de définition qu'un modèle sache trancher de façon stable, et
+le résultat dépend du cadrage, de la pose, du vêtement.
+
+Trois garde-fous en découlent :
+
+- **Chaque étiquette porte sa confiance.** Contour plein = le modèle est sûr ;
+  contour pointillé + pourcentage = il ne l'est pas.
+- **Un attribut incertain ne filtre jamais.** Sous son seuil, il s'affiche mais
+  n'écarte rien.
+- **Rien ne disparaît.** Une annonce écartée par un critère visuel part dans
+  **Écartées** avec sa raison, et se remet à trier d'un clic.
+
+Le modèle vérifie d'abord qu'il y a bien une personne sur la photo. Sans ce
+garde-fou il étiquetterait aussi les bannières et les captures de tarifs, qui
+sont courantes dans ces canaux — avec autant d'assurance.
+
+Enfin, ces étiquettes décrivent des personnes réelles et sont enregistrées dans
+`data/db.json` : en UE, elles relèvent des mêmes obligations que le reste de
+l'annonce.
+
 ## Où sont tes données
 
 Tout dans `worker-telegram/data/` :
