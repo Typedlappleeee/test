@@ -87,3 +87,54 @@ export function makeResolver(client) {
 export function chatIdOf(msg) {
   return String(msg.peerId?.channelId ?? msg.peerId?.chatId ?? msg.chatId ?? '')
 }
+
+/**
+ * Les salons où ce compte peut écrire : destinations possibles d'un transfert.
+ * « Messages enregistrés » (la conversation avec soi-même) vient en tête —
+ * c'est la seule destination à risque strictement nul.
+ */
+export async function listTargets(client, limit = 300) {
+  const me = await client.getMe()
+  const out = [{
+    chatId: String(me.id), title: 'Messages enregistrés (moi-même)',
+    username: me.username ?? null, kind: 'self',
+  }]
+  for (const d of await client.getDialogs({ limit })) {
+    const e = d.entity
+    if (!e?.id) continue
+    if (d.isUser) continue                                   // pas d'envoi à des tiers
+    // Un canal en lecture seule n'accepte pas de message : on ne le propose pas.
+    if (e.className === 'Channel' && e.broadcast && !e.creator && !e.adminRights) continue
+    if (e.left || e.restricted) continue
+    out.push({
+      chatId: e.id.toString(), title: d.title ?? '(sans titre)',
+      username: e.username ?? null,
+      kind: e.className === 'Channel' ? (e.broadcast ? 'channel' : 'group') : 'group',
+    })
+  }
+  return out
+}
+
+/**
+ * Transfère les messages d'une annonce vers une destination.
+ *
+ * Le transfert natif conserve les photos et la mention du salon d'origine. Il
+ * échoue quand le salon source protège son contenu (`noforwards`) : on retombe
+ * alors sur une copie — texte et photos réenvoyés depuis le disque —, ce qui
+ * perd l'attribution mais fait arriver l'annonce.
+ */
+export async function forwardListing(client, { fromEntity, toEntity, msgIds, fallbackText, fallbackFiles }) {
+  try {
+    await client.forwardMessages(toEntity, { messages: msgIds, fromPeer: fromEntity })
+    return { mode: 'forward' }
+  } catch (e) {
+    const protectedContent = /forward|noforward|protect|COPY/i.test(e.message || '')
+    if (!protectedContent && !fallbackText) throw e
+    if (fallbackFiles?.length) {
+      await client.sendFile(toEntity, { file: fallbackFiles, caption: fallbackText, parseMode: undefined })
+    } else {
+      await client.sendMessage(toEntity, { message: fallbackText })
+    }
+    return { mode: 'copy', why: e.message }
+  }
+}

@@ -718,6 +718,16 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
       <div class="panel">
         <div class="panel-head">
           <div>
+            <h2>Transférer les matchs</h2>
+            <p>Chaque annonce retenue part dans un salon Telegram à toi, photos comprises.</p>
+          </div>
+        </div>
+        <div class="panel-body" id="forward-panel"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
             <h2>Lire les photos</h2>
             <p>Un modèle tourne sur cette machine et repère ce que la photo montre. Aucune image n’est envoyée ailleurs.</p>
           </div>
@@ -1049,6 +1059,8 @@ const state = {
   dialogs: null, dialogQuery: '',
   history: [], pane: 'todo', view: 'deck', stageFilter: 'all',
   sortBy: 'auto', salonFilter: 'all', focus: null,
+  vision: { running: false, done: 0, total: 0 }, visionAttrs: null,
+  forward: { pending: 0, sent: 0 }, targets: null,
 };
 
 const STAGES = [
@@ -1202,7 +1214,7 @@ function render() {
   }
 
   if (state.pane !== 'todo') {
-    renderNav(); renderFavs(fav); renderSalons(); renderVisionPanel(); renderFilterPreview();
+    renderNav(); renderFavs(fav); renderSalons(); renderForwardPanel(); renderVisionPanel(); renderFilterPreview();
     if (state.pane === 'out') renderOut();
     return;
   }
@@ -1222,6 +1234,7 @@ function render() {
   renderSort();
   renderFavs(fav);
   renderSalons();
+  renderForwardPanel();
   renderVisionPanel();
   renderFilterPreview();
 }
@@ -1784,10 +1797,15 @@ function renderFavs(fav) {
         + '<div><div class="fav-name">' + esc(titleOf(l)) + '</div>'
         + '<div class="fav-line" style="margin-top:2px"><span>Prix <b>' + esc(money(f.price)) + '</b></span><span>Salaire <b>' + esc(money(f.salary)) + '</b></span></div></div>'
         + (f.middleman ? '<div class="fav-mm">' + esc(f.middleman) + '</div>' : '')
+        + (l.forwarded
+            ? (l.forwarded.mode === 'error'
+                ? '<button class="drop" data-refwd="' + esc(l.id) + '" style="color:var(--pass)">Transfert échoué — réessayer</button>'
+                : '<span class="vchip sure">Transféré</span>')
+            : '')
         + '<select data-id="' + l.id + '">' + STAGES.map(s =>
             '<option value="' + s.k + '"' + ((state.stages[l.id] || 'new') === s.k ? ' selected' : '') + '>' + s.label + '</option>').join('') + '</select>'
         + '<textarea data-id="' + l.id + '" placeholder="Note (contact, réponse, conditions…)">' + esc(state.notes[l.id] || '') + '</textarea>'
-        + '<button class="drop" data-id="' + l.id + '">Retirer des favoris</button>'
+        + '<button class="drop" data-id="' + esc(l.id) + '">Retirer des favoris</button>'
       + '</div></article>';
   }).join('');
 
@@ -1800,12 +1818,86 @@ function renderFavs(fav) {
     state.notes[el.dataset.id] = el.value;
     api('note', { id: el.dataset.id, note: el.value }).catch(() => {});
   });
-  box.querySelectorAll('.drop').forEach(b => b.onclick = () => {
+  box.querySelectorAll('[data-refwd]').forEach(b => b.onclick = async () => {
+    b.textContent = 'Envoi…'; b.disabled = true;
+    await api('forward', { id: b.dataset.refwd });
+    setTimeout(refresh, 900);
+  });
+  box.querySelectorAll('.drop[data-id]').forEach(b => b.onclick = () => {
     delete state.decisions[b.dataset.id]; delete state.stages[b.dataset.id];
     state.history = state.history.filter(h => h.id !== b.dataset.id);
     render();
     api('undecide', { id: b.dataset.id }).catch(() => {});
   });
+}
+
+/* ── Transfert des matchs ───────────────────────────────────────────────── */
+/** Enregistre les réglages sans attendre le bouton Appliquer. */
+async function pushPrefs() {
+  try { await api('prefs', { prefs: state.prefs }); } catch (e) {}
+}
+
+async function loadTargets() {
+  try {
+    const r = await api('targets');
+    state.targets = r.offline ? null : (r.targets || []);
+  } catch (e) { state.targets = null; }
+  renderForwardPanel();
+}
+
+function renderForwardPanel() {
+  const box = $('#forward-panel');
+  if (!box) return;
+  const p = state.prefs, f = state.forward || {};
+  const on = !!p.forward_enabled;
+  const sent = state.listings.filter(l => l.forwarded?.mode && l.forwarded.mode !== 'error').length;
+  // Matchs pris alors que le transfert était inactif, ou avant un redémarrage.
+  const waiting = state.listings.filter(l => state.decisions[l.id] === 'match' && !l.forwarded).length;
+  const failed = state.listings.filter(l => l.forwarded?.mode === 'error').length;
+
+  box.innerHTML =
+    '<button class="switch" id="s-forward" aria-pressed="' + on + '">'
+      + '<span class="knob"><i></i></span>Transférer chaque match vers un salon</button>'
+    + (on
+        ? '<label class="vision-row" style="margin-top:12px;grid-template-columns:110px 1fr"><span>Destination</span>'
+            + '<select id="forward-to">'
+              + (!Array.isArray(state.targets)
+                  ? '<option>Telegram non connecté</option>'
+                  : '<option value="">— choisis un salon —</option>'
+                    + state.targets.map(t => '<option value="' + esc(t.chatId) + '"'
+                        + (String(p.forward_to) === String(t.chatId) ? ' selected' : '') + '>'
+                        + esc(t.title) + (t.username ? ' · @' + esc(t.username) : '') + '</option>').join(''))
+            + '</select></label>'
+          + '<p style="margin:10px 0 0;font-size:11.5px;color:var(--ink-3)">'
+            + sent + ' transféré(s)'
+            + (f.pending ? ' · <b>' + f.pending + ' en attente</b>' : '')
+            + (failed ? ' · <span style="color:var(--pass)">' + failed + ' en échec</span>' : '')
+          + '</p>'
+          + (waiting
+              ? '<button class="btn" id="fwd-pending" style="margin-top:10px">Transférer les ' + waiting + ' match(s) jamais envoyés</button>'
+              : '')
+          + '<p style="margin:8px 0 0;font-size:11.5px;color:var(--ink-3)">'
+            + 'Les envois partent un par un, espacés de quelques secondes : Telegram sanctionne les rafales. '
+            + 'Une annonce déjà transférée ne repart pas. Le transfert garde les photos et le salon d’origine — '
+            + 'sauf si celui-ci protège son contenu, auquel cas l’annonce est recopiée.</p>'
+        : '<p style="margin:10px 0 0;font-size:11.5px;color:var(--ink-3)">'
+          + 'Jusqu’ici le worker ne fait que lire tes salons, ce qui est le régime le moins risqué pour un compte Telegram. '
+          + 'Transférer, c’est écrire : vise un salon à toi, jamais des inconnus.</p>');
+
+  $('#s-forward').onclick = () => {
+    state.prefs.forward_enabled = !state.prefs.forward_enabled;
+    if (state.prefs.forward_enabled && !Array.isArray(state.targets)) loadTargets();
+    renderForwardPanel();
+    void pushPrefs();
+  };
+  const sel = $('#forward-to');
+  if (sel) sel.onchange = () => { state.prefs.forward_to = sel.value || null; void pushPrefs(); };
+  const pend = $('#fwd-pending');
+  if (pend) pend.onclick = async () => {
+    pend.disabled = true; pend.textContent = 'Mise en file…';
+    await api('forward/pending');
+    setTimeout(refresh, 900);
+  };
 }
 
 /* ── Lecture des photos ─────────────────────────────────────────────────── */
@@ -1864,9 +1956,12 @@ function renderVisionPanel() {
   $('#s-vision').onclick = () => {
     state.prefs.vision_enabled = !state.prefs.vision_enabled;
     renderVisionPanel();
+    void pushPrefs();
   };
-  box.querySelectorAll('[data-vf]').forEach(sel => sel.onchange = () => {
+  box.querySelectorAll('[data-vf]').forEach(sel => sel.onchange = async () => {
     state.prefs.vision = { ...(state.prefs.vision || {}), [sel.dataset.vf]: sel.value };
+    await pushPrefs();
+    await refresh();
   });
 }
 
@@ -1958,7 +2053,7 @@ function renderSalons() {
   });
 
   const box = $('#dialog-list');
-  if (state.dialogs === null) {
+  if (!Array.isArray(state.dialogs)) {
     box.innerHTML = '<div class="panel-body" style="color:var(--ink-3);font-size:12.5px">'
       + 'Telegram n’est pas connecté — impossible de lister tes salons. Lance <code>npm run login</code> puis <code>npm start</code>.</div>';
     return;
@@ -2016,6 +2111,7 @@ function openDrawer() {
   $('#drawer').classList.remove('hidden');
   $('#drawer-scrim').classList.remove('hidden');
   if (!state.dialogs) loadDialogs();
+  if (state.prefs.forward_enabled && !Array.isArray(state.targets)) loadTargets();
 }
 function closeDrawer() {
   $('#drawer').classList.add('hidden');

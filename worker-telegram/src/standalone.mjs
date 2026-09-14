@@ -59,6 +59,11 @@ const server = createServer(async (req, res) => {
     if (path === '/api/state') return json(res, 200, publicState())
     if (path === '/api/vision/attributes') return json(res, 200, { attributes: ATTRIBUTES })
 
+    if (path === '/api/targets') {
+      if (!client || !tg) return json(res, 200, { targets: [], offline: true })
+      return json(res, 200, { targets: await tg.listTargets(client) })
+    }
+
     if (path === '/api/events') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' })
       res.write('retry: 2000\n\n')
@@ -75,7 +80,11 @@ const server = createServer(async (req, res) => {
     if (req.method === 'POST') {
       const body = await readBody(req)
       switch (path) {
-        case '/api/decide':   store.decide(body.id, body.decision); break
+        case '/api/decide': {
+          store.decide(body.id, body.decision)
+          if (body.decision === 'match') queueForward(body.id)
+          break
+        }
         case '/api/undecide': store.undecide(body.id); break
         case '/api/stage':    store.setStage(body.id, body.stage); break
         case '/api/note':     store.setNote(body.id, body.note); break
@@ -83,6 +92,20 @@ const server = createServer(async (req, res) => {
         case '/api/reset-decisions': store.resetDecisions(); break
         case '/api/restore': store.restore(body.id); break
         case '/api/vision/run': void runVision(); break
+        // Rattraper les matchs jamais transférés — bouton explicite : les
+        // renvoyer d'office au démarrage expédierait tout l'historique d'un coup.
+        case '/api/forward/pending': {
+          for (const l of store.data.listings) {
+            if (store.data.decisions[l.id] === 'match' && !l.forwarded) queueForward(l.id)
+          }
+          break
+        }
+        // Renvoyer à la main un match déjà pris (ou dont le transfert a échoué).
+        case '/api/forward': {
+          const l = store.data.listings.find(x => x.id === body.id)
+          if (l?.forwarded?.mode === 'error' || !l?.forwarded) { if (l) l.forwarded = null; queueForward(body.id) }
+          break
+        }
         case '/api/salon/add': {
           const row = store.addSalon(body)
           if (row && client) { await watchSalons(); if (BACKFILL_NEW) void backfillOne(row) }
@@ -144,6 +167,75 @@ function publicState() {
     stats: d.stats,
     telegram: { connected: !!client, demo: DEMO, me: meLabel },
     vision: visionState,
+    forward: forwardState,
+  }
+}
+
+/* ── Transfert des matchs ────────────────────────────────────────────────── */
+// Quand une annonce est retenue, l'envoyer dans un salon à soi — pour que
+// l'équipe la voie avec ses photos, sans copier-coller.
+//
+// Une file, pas d'envois directs : Telegram sanctionne les rafales, et un tri
+// rapide peut produire dix matchs en dix secondes. Les transferts partent donc
+// un par un, espacés, et une annonce déjà envoyée ne repart jamais.
+const FORWARD_GAP_MS = 4000
+
+const forwardQueue = []
+const forwardState = { pending: 0, sent: 0, lastError: null, running: false }
+
+function queueForward(listingId) {
+  const l = store.data.listings.find(x => x.id === listingId)
+  if (!l || l.forwarded) return
+  if (forwardQueue.includes(listingId)) return
+  forwardQueue.push(listingId)
+  forwardState.pending = forwardQueue.length
+  void drainForwards()
+}
+
+async function drainForwards() {
+  if (forwardState.running || !client || !resolve) return
+  forwardState.running = true
+  try {
+    while (forwardQueue.length) {
+      const prefs = await store.prefs()
+      const target = prefs.forward_to
+      if (!prefs.forward_enabled || !target) break
+
+      const id = forwardQueue.shift()
+      forwardState.pending = forwardQueue.length
+      const l = store.data.listings.find(x => x.id === id)
+      if (!l || l.forwarded) continue
+
+      try {
+        const { forwardListing } = await import('./telegram.mjs')
+        const salon = store.data.salons.find(s => s.id === l.salonId)
+        const toEntity = await client.getEntity(target === 'me' ? 'me' : BigInt(target))
+        const fromEntity = salon ? await resolve(salon) : null
+        const ids = (l.msgIds?.length ? l.msgIds : [l.msgId]).filter(n => Number.isFinite(n))
+
+        if (!fromEntity || !ids.length) throw new Error('message d’origine introuvable')
+
+        const res = await forwardListing(client, {
+          fromEntity, toEntity, msgIds: ids,
+          fallbackText: l.raw,
+          fallbackFiles: (l.photos ?? []).map(p => store.pathOf(p)).filter(Boolean),
+        })
+        store.markForwarded(id, res)
+        forwardState.sent++
+        forwardState.lastError = null
+        log(`  → transféré (${res.mode}) : ${l.fields?.listing_id ? '#' + l.fields.listing_id : l.id}`)
+      } catch (e) {
+        forwardState.lastError = e.message
+        log('  transfert impossible : ' + e.message)
+        store.markForwarded(id, { mode: 'error', why: e.message })
+      }
+      store.touch()
+      if (forwardQueue.length) await new Promise(r => setTimeout(r, FORWARD_GAP_MS))
+    }
+  } finally {
+    forwardState.running = false
+    forwardState.pending = forwardQueue.length
+    store.touch()
   }
 }
 
@@ -243,6 +335,8 @@ async function startTelegram() {
   }, new NewMessage({}))
 
   if (BACKFILL) for (const s of watched.values()) await backfillOne(s)
+
+  void drainForwards()
 }
 
 /* ── Démo ────────────────────────────────────────────────────────────────── */

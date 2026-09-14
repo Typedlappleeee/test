@@ -87,6 +87,9 @@ export function createIngestor({ client, store, log = console.log }) {
       salonId: salon.id,
       salonTitle: salon.title,
       msgId: Number(first.id),
+      // Tous les messages de l'album : un transfert doit emporter les photos,
+      // qui vivent dans des messages distincts du texte.
+      msgIds: messages.map(m => Number(m.id)).filter(Number.isFinite),
       groupedId: first.groupedId ?? null,
       parsed,
       photos: stored,

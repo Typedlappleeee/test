@@ -16,7 +16,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const EMPTY = {
   version: 1,
   salons: [],      // { id, chatId, title, username, kind, active, addedAt, lastSeenAt, lastError, count }
-  listings: [],    // { id, salonId, salonTitle, msgId, listingId, postedAt, raw, fields, photos, confidence, status, reasons, key, seenIn }
+  listings: [],    // { id, salonId, salonTitle, msgId, msgIds, listingId, postedAt, raw, fields, photos, vision, confidence, status, reasons, key, seenIn, forwarded }
   decisions: {},   // id -> 'match' | 'pass' | 'later'
   stages: {},      // id -> étape du pipeline
   notes: {},
@@ -106,7 +106,7 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
     },
 
     // ── Annonces ──────────────────────────────────────────────────────────
-    async saveListing({ salonId, salonTitle, msgId, parsed, photos, vision, postedAt, prefs }) {
+    async saveListing({ salonId, salonTitle, msgId, msgIds, parsed, photos, vision, postedAt, prefs }) {
       const existing = byKey.get(parsed.dedupeKey)
       if (existing) {
         db.stats.duplicates++
@@ -119,7 +119,7 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
               const reasons = [...hardFilter(parsed.fields, prefs), ...visionFilter(vision, prefs)]
       const row = {
         id: parsed.dedupeKey, key: parsed.dedupeKey,
-        salonId, salonTitle, msgId,
+        salonId, salonTitle, msgId, msgIds: msgIds?.length ? msgIds : (msgId != null ? [msgId] : []),
         listingId: parsed.fields.listing_id ?? null,
         postedAt: new Date(postedAt).getTime(),
         raw: parsed.raw, fields: parsed.fields, photos, vision: vision ?? null,
@@ -139,6 +139,15 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
     hasPhotos(key) {
       const l = byKey.get(key)
       return !!(l && l.photos?.length)
+    },
+
+    /** Note qu'une annonce a été transférée, pour ne pas l'envoyer deux fois. */
+    markForwarded(id, info) {
+      const l = byKey.get(id)
+      if (!l) return false
+      l.forwarded = { at: Date.now(), ...info }
+      schedule(); notify('listings')
+      return true
     },
 
     /** Attache une analyse de photos à une annonce, et rejoue ses filtres. */

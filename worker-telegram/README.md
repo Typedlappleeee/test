@@ -82,6 +82,36 @@ navigateur, c'est le worker qui capte, pas la page.
 
 ---
 
+## Transférer les matchs vers un salon
+
+Chaque annonce retenue peut partir dans un salon Telegram à toi, photos
+comprises : l'équipe la voit sans copier-coller. Réglage dans **⚙ Salons &
+filtres → Transférer les matchs**, avec le salon de destination.
+
+C'est un **transfert natif** : les photos suivent et le salon d'origine reste
+mentionné. Quand la marketplace protège son contenu (certaines l'interdisent),
+l'annonce est recopiée — le texte et les photos arrivent, l'attribution est
+perdue.
+
+### Le point de prudence
+
+Jusqu'ici le worker ne faisait que **lire**, ce qui est le régime le plus sûr
+pour un compte utilisateur. Transférer, c'est **écrire** — et c'est ce
+comportement-là que Telegram sanctionne quand il devient massif.
+
+Trois garde-fous en place :
+
+- **Les envois sont sérialisés**, espacés de quelques secondes. Trier vite peut
+  produire dix matchs en dix secondes ; ils partent un par un.
+- **Une annonce déjà transférée ne repart jamais**, même re-matchée.
+- **Rien ne part rétroactivement.** Au démarrage, les matchs antérieurs ne sont
+  pas renvoyés d'office — sinon activer l'option expédierait tout l'historique
+  d'un coup. Un bouton explicite rattrape ceux qui n'ont jamais été envoyés.
+
+Vise un salon **à toi** (un canal dont tu es admin, ou « Messages enregistrés »,
+la conversation avec toi-même — risque nul). Les conversations privées avec des
+tiers ne sont volontairement pas proposées comme destination.
+
 ## Lire les photos
 
 Un modèle de vision (CLIP) tourne **sur ta machine** et repère ce que la photo
