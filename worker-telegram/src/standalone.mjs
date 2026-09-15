@@ -299,10 +299,11 @@ async function watchSalons() {
 
 async function backfillOne(salon) {
   try {
-    const limit = Number(env.BACKFILL_LIMIT || 200)
-    log(`rattrapage de « ${salon.title} » (${limit} messages)…`)
+    const limit = Number(env.BACKFILL_LIMIT || 600)
+    log(`rattrapage de « ${salon.title} » (jusqu'à ${limit} messages)…`)
     const r = await ingestor.backfill(salon, await resolve(salon), limit)
-    log(`« ${salon.title} » : ${r.inserted} nouvelles, ${r.duplicate} doublons sur ${r.scanned} messages.`)
+    log(`« ${salon.title} » : ${r.inserted} nouvelle(s), ${r.duplicate} déjà connue(s)`
+      + (r.stopped ? ` — arrêté après ${r.scanned} messages, la suite est déjà en base.` : ` sur ${r.scanned} messages.`))
   } catch (e) {
     log(`rattrapage échoué (${salon.title}) : ${e.message}`)
     await store.salonError(salon.id, e.message)

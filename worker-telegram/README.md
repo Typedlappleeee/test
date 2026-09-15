@@ -153,6 +153,34 @@ Enfin, ces étiquettes décrivent des personnes réelles et sont enregistrées d
 `data/db.json` : en UE, elles relèvent des mêmes obligations que le reste de
 l'annonce.
 
+## Le lancer tout seul au démarrage de Windows
+
+Pas besoin de serveur : le worker tourne sur ton PC. Pour qu'il démarre sans y
+penser, mets un raccourci vers **`demarrer.bat`** dans le dossier de démarrage
+de Windows :
+
+1. Touche **Windows + R**, tape `shell:startup`, Entrée
+2. Clic droit sur `demarrer.bat` → **Créer un raccourci**
+3. Glisse le raccourci dans le dossier ouvert à l'étape 1
+
+À chaque ouverture de session, il rattrape ce qui est paru pendant que le PC
+était éteint, puis reste à l'écoute. Pour l'arrêter : ferme la fenêtre.
+
+### Combien tu rates quand le PC est éteint
+
+Rien, tant que le rattrapage remonte plus loin que ton absence. Il parcourt
+jusqu'à `BACKFILL_LIMIT` messages par salon (600 par défaut) **en partant du
+plus récent**, et s'arrête dès qu'il retombe sur une série d'annonces déjà
+connues. Une limite large ne coûte donc rien au quotidien : après une nuit, il
+relit une trentaine de messages et s'arrête ; après une semaine, il remonte
+aussi loin qu'il faut.
+
+Monte `BACKFILL_LIMIT` dans `.env` si tes salons sont très actifs ou si tu
+laisses passer plusieurs jours.
+
+Un VPS ne devient utile que pour capter **pendant que ton PC est éteint** — ou
+pour que ton équipe voie le même parc, ce qui relève plutôt du mode Supabase.
+
 ## Où sont tes données
 
 Tout dans `worker-telegram/data/` :

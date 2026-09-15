@@ -126,20 +126,34 @@ export function createIngestor({ client, store, log = console.log }) {
   }
 
   /** Rattrape l'historique d'un salon, du plus ancien au plus récent. */
-  async function backfill(salon, entity, limit) {
+  /**
+   * Rattrape l'historique d'un salon, du message le plus récent vers le passé.
+   *
+   * Ce sens a une conséquence utile : dès qu'on retombe sur une série
+   * d'annonces déjà en base, c'est que tout ce qui précède l'est aussi. On
+   * s'arrête alors, ce qui permet de fixer une limite large — remonter loin
+   * après plusieurs jours d'arrêt — sans payer ce prix chaque jour quand il
+   * n'y a rien de neuf. `deep` force le parcours complet.
+   */
+  async function backfill(salon, entity, limit, { deep = false, stopAfter = 25 } = {}) {
     const msgs = await client.getMessages(entity, { limit })
     const groups = new Map()
-    for (const m of [...msgs].reverse()) {
+    for (const m of msgs) {                       // du plus récent au plus ancien
       const k = m.groupedId ? String(m.groupedId) : 'm' + m.id
       groups.set(k, [...(groups.get(k) ?? []), m])
     }
-    let inserted = 0, duplicate = 0
+
+    let inserted = 0, duplicate = 0, scanned = 0, streak = 0, stopped = false
     for (const g of groups.values()) {
       const r = await handleGroup(salon, g)
-      if (r === 'inserted') inserted++
-      else if (r === 'duplicate') duplicate++
+      scanned++
+      if (r === 'inserted') { inserted++; streak = 0 }
+      else if (r === 'duplicate') { duplicate++; streak++ }
+      // Les messages qui ne sont pas des annonces ne cassent pas la série :
+      // un salon poste aussi des bannières entre deux annonces.
+      if (!deep && streak >= stopAfter) { stopped = true; break }
     }
-    return { inserted, duplicate, scanned: groups.size }
+    return { inserted, duplicate, scanned, total: groups.size, stopped }
   }
 
   return { queue, backfill, handleGroup }
