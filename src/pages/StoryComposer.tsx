@@ -10,6 +10,7 @@ import BankPicker, { type PickerKind } from '@/components/BankPicker'
 import { geelarkUploadImage, postStoryToPhone } from '@/lib/geelark'
 import { startCreditRun, isCreditError, CREDIT_COSTS } from '@/lib/credits'
 import { startRun } from '@/lib/runStore'
+import { recordRun, type RunOutcome } from '@/lib/activityLog'
 import { loadProxyRotation, resolveRotationUrls } from '@/lib/proxyRotation'
 
 interface Phone { id: string; ig_username: string | null; phone_name: string; status: string; group_name: string | null; geelark_id: string | null }
@@ -113,6 +114,8 @@ export default function StoryComposer({ theme, user, org, onBack }: {
     }
     push(`💳 ${CREDIT_COSTS.story * targets.length} crédits débités (${CREDIT_COSTS.story}/compte).`)
     const R = startRun('story', `${targets.length} compte${targets.length > 1 ? 's' : ''}`, targets.length)
+    // Détail par compte, pour que la page Activité montre autre chose qu'un total.
+    const outcomes: RunOutcome[] = []
 
     // Héberge chaque image du pool UNE fois.
     push(`🔗 Préparation de ${chosenImgs.length} image(s)…`)
@@ -143,6 +146,7 @@ export default function StoryComposer({ theme, user, org, onBack }: {
       const r = await postStoryToPhone(bearer, p.geelark_id!, { imageResourceUrl: resByImg.get(img.id)!, linkUrl: links[p.id], linkText: st, rotationUrls: rot }, push)
       if (!r.ok) run.markFailed()
       R.tick(r.ok)
+      outcomes.push({ account: p.ig_username ?? p.geelark_id ?? p.id, ok: r.ok, error: r.error, item: img.title })
       setRunItems(items => items.map(it => it.id === p.id ? { ...it, phase: r.ok ? 'done' : 'failed', detail: r.error } : it))
     }
     for (let b = 0; b < jobs.length; b += concurrency) {
@@ -152,6 +156,20 @@ export default function StoryComposer({ theme, user, org, onBack }: {
     R.finish()
     const { refunded } = await run.settle()
     if (refunded > 0) push(`↩︎ ${refunded} crédits remboursés (comptes échoués).`)
+
+    // Trace en base : le registre des runs vit en mémoire et s'efface.
+    const okCount = outcomes.filter(o => o.ok).length
+    const logErr = await recordRun({
+      type: 'story',
+      total: outcomes.length,
+      ok: okCount,
+      err: outcomes.length - okCount,
+      outcomes,
+      caption: null,
+      userId: user.id,
+      orgId: org.currentOrg?.id ?? null,
+    })
+    if (logErr) push(`⚠️ Run non enregistré dans Activité : ${logErr}`)
     push('✔ Stories terminées.')
     setRunning(false)
   }

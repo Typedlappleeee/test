@@ -13,6 +13,7 @@ import { startCreditRun, isCreditError, CREDIT_COSTS } from '@/lib/credits'
 import BankPicker, { type PickerKind } from '@/components/BankPicker'
 import { generateCaption } from '@/lib/ai'
 import { startRun, cancelRun } from '@/lib/runStore'
+import { recordRun, type RunOutcome } from '@/lib/activityLog'
 import { loadProxyRotation, resolveRotationUrls } from '@/lib/proxyRotation'
 
 interface Phone { id: string; ig_username: string | null; phone_name: string; status: string; group_name: string | null; geelark_id: string | null; ig_status: string | null; last_post_at: string | null; account_state: string | null }
@@ -142,6 +143,8 @@ export default function ReelsComposer({ theme, user, org, onBack }: {
     // Suivi global (widget flottant + annulation), survit à la navigation.
     const R = startRun('reels', `${targets.length} compte${targets.length > 1 ? 's' : ''}`, targets.length)
     setRunId(R.id)
+    // Détail par compte, pour que la page Activité montre autre chose qu'un total.
+    const outcomes: RunOutcome[] = []
 
     // 1) Répartition D'ABORD : UNE vidéo par compte (séquentielle ou aléatoire).
     const shuffle = <T,>(a: T[]): T[] => { const b = [...a]; for (let k = b.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1));[b[k], b[j]] = [b[j], b[k]] } return b }
@@ -182,6 +185,7 @@ export default function ReelsComposer({ theme, user, org, onBack }: {
       const r = await postReelToPhone(bearer, p.geelark_id!, ru, cap, push, rot, reelsTrial)
       if (!r.ok) run.markFailed()
       R.tick(r.ok)
+      outcomes.push({ account: p.ig_username ?? p.geelark_id ?? p.id, ok: r.ok, error: r.error, item: v.title })
       setRunItems(items => items.map(it => it.id === p.id ? { ...it, phase: r.ok ? 'done' : 'failed', detail: r.error } : it))
     }
 
@@ -193,6 +197,21 @@ export default function ReelsComposer({ theme, user, org, onBack }: {
     setRunId(null)
     const { refunded } = await run.settle()
     if (refunded > 0) push(`↩︎ ${refunded} crédits remboursés (comptes échoués).`)
+
+    // Trace en base : le registre des runs vit en mémoire et s'efface, la page
+    // Activité lit `post_runs`. Sans cette écriture, un posting ne laisse rien.
+    const okCount = outcomes.filter(o => o.ok).length
+    const logErr = await recordRun({
+      type: 'reels',
+      total: outcomes.length || targets.length,
+      ok: okCount,
+      err: outcomes.length - okCount,
+      outcomes,
+      caption: caps[0] ?? null,
+      userId: user.id,
+      orgId: org.currentOrg?.id ?? null,
+    })
+    if (logErr) push(`⚠️ Run non enregistré dans Activité : ${logErr}`)
 
     // Usage unique : retire de la banque les vidéos réellement utilisées.
     if (autoRemove && usedVidIds.size > 0) {

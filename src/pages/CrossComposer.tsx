@@ -9,6 +9,7 @@ import { useConnections } from '@/lib/connections'
 import { geelarkUploadVideo, crossPostToPhone, CROSS_PLATFORMS, type CrossPlatform } from '@/lib/geelark'
 import { startCreditRun, isCreditError, CREDIT_COSTS } from '@/lib/credits'
 import { startRun } from '@/lib/runStore'
+import { recordRun, type RunOutcome } from '@/lib/activityLog'
 import { loadProxyRotation, resolveRotationUrls } from '@/lib/proxyRotation'
 import BankPicker from '@/components/BankPicker'
 
@@ -87,6 +88,8 @@ export default function CrossComposer({ theme, user, org, onBack }: {
     const resourceUrl = await geelarkUploadVideo(bearer, url, push)
     if (!resourceUrl) { push('❌ Envoi vidéo échoué.'); run.abort(); await run.settle(); setRunning(false); return }
     const R = startRun('cross', `${targets.length} compte × ${platList.length} plateforme${platList.length > 1 ? 's' : ''}`, targets.length * platList.length)
+    // Détail par compte, pour que la page Activité montre autre chose qu'un total.
+    const outcomes: RunOutcome[] = []
     const concurrency = rot ? 1 : targets.length   // sans proxy rotatif → comptes en parallèle
     push(rot ? '🔁 Envoi en série (proxy rotatif).' : `⚡ ${targets.length} compte(s) en parallèle.`)
     const doPhone = async (p: typeof targets[number]) => {
@@ -98,6 +101,7 @@ export default function CrossComposer({ theme, user, org, onBack }: {
         const r = await crossPostToPhone(bearer, p.geelark_id!, pl, { mediaResourceUrl: resourceUrl, caption, rotationUrls: rot }, push)
         if (!r.ok) run.markFailed()
         R.tick(r.ok)
+        outcomes.push({ account: `${phoneLabel(p)} · ${pl}`, ok: r.ok, error: r.error })
         setRunItems(items => items.map(it => it.id === key ? { ...it, phase: r.ok ? 'done' : 'failed', detail: r.error } : it))
       }
     }
@@ -108,6 +112,20 @@ export default function CrossComposer({ theme, user, org, onBack }: {
     R.finish()
     const { refunded } = await run.settle()
     if (refunded > 0) push(`↩︎ ${refunded} crédits remboursés.`)
+
+    // Trace en base : le registre des runs vit en mémoire et s'efface.
+    const okCount = outcomes.filter(o => o.ok).length
+    const logErr = await recordRun({
+      type: 'cross',
+      total: outcomes.length,
+      ok: okCount,
+      err: outcomes.length - okCount,
+      outcomes,
+      caption: caption,
+      userId: user.id,
+      orgId: org.currentOrg?.id ?? null,
+    })
+    if (logErr) push(`⚠️ Run non enregistré dans Activité : ${logErr}`)
     push('✔ Cross-posting terminé.'); setRunning(false)
   }
 

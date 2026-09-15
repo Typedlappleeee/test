@@ -6,6 +6,13 @@ import { Btn, Chip, Icon, Panel, PageHead, Kpi, Empty, Modal } from '@/lib/ui'
 import type { OrgState } from '@/lib/data'
 
 // ── Un « run » unifié (post_runs directs + scheduled_posts exécutés) ────────────
+interface RunOutcome {
+  account: string
+  ok: boolean
+  error?: string
+  item?: string
+}
+
 interface RunItem {
   id: string
   ok: number
@@ -14,6 +21,20 @@ interface RunItem {
   meta: string
   ts: number       // pour tri
   when: string     // libellé relatif
+  outcomes: RunOutcome[]   // compte par compte, quand le run l'a enregistré
+  caption?: string | null
+}
+
+/** Détail par compte, tel qu'écrit par les écrans de publication. */
+function outcomesOf(result: unknown): RunOutcome[] {
+  if (!result || typeof result !== 'object') return []
+  const list = (result as { outcomes?: unknown }).outcomes
+  return Array.isArray(list) ? (list as RunOutcome[]).filter(o => o && typeof o.account === 'string') : []
+}
+function captionOf(result: unknown): string | null {
+  if (!result || typeof result !== 'object') return null
+  const c = (result as { caption?: unknown }).caption
+  return typeof c === 'string' && c.trim() ? c : null
 }
 
 function asArray(v: unknown): any[] {
@@ -83,22 +104,30 @@ export default function Activity({ theme, infra, user, org }: {
     setLoading(true)
     setError(null)
     const scope = (q: any) => currentOrg ? q.eq('org_id', currentOrg.id) : q.eq('user_id', user.id).is('org_id', null)
-    const [prRes, spRes] = await Promise.all([
-      scope(supabase.from('post_runs').select('id,type,ok_count,err_count,total,created_at'))
-        .order('created_at', { ascending: false }).limit(100),
+    // `result` porte le détail par compte. Une base antérieure à cette colonne
+    // renvoie une erreur : on rejoue alors la requête sans, plutôt que de
+    // laisser la page vide.
+    const runsQuery = (cols: string) => scope(supabase.from('post_runs').select(cols))
+      .order('created_at', { ascending: false }).limit(100)
+    let prRes = await runsQuery('id,type,ok_count,err_count,total,created_at,result')
+    if (prRes.error) prRes = await runsQuery('id,type,ok_count,err_count,total,created_at')
+
+    const [spRes] = await Promise.all([
       scope(supabase.from('scheduled_posts').select('*'))
         .in('status', ['done', 'failed']).order('executed_at', { ascending: false }).limit(100),
     ])
     if (prRes.error && spRes.error) { setError('Impossible de charger ton activité.'); setLoading(false); return }
 
     const items: (RunItem & { type: string })[] = []
-    for (const r of ((prRes.data ?? []) as PostRun[])) {
+    for (const r of ((prRes.data ?? []) as (PostRun & { result?: unknown })[])) {
       const total = r.total ?? 0
       const ok = r.ok_count ?? 0
+      const caption = captionOf(r.result)
       items.push({
         id: 'run-' + r.id, type: r.type, ok, total,
-        title: `${total} compte${total > 1 ? 's' : ''}`,
+        title: `${total} compte${total > 1 ? 's' : ''}` + (caption ? ` · ${caption}` : ''),
         meta: runMeta(r.type), ts: new Date(r.created_at).getTime(), when: relLabel(r.created_at),
+        outcomes: outcomesOf(r.result), caption,
       })
     }
     for (const p of ((spRes.data ?? []) as ScheduledPost[])) {
@@ -110,6 +139,7 @@ export default function Activity({ theme, infra, user, org }: {
         id: 'sched-' + p.id, type: p.type ?? 'reels', ok, total,
         title: `${total} compte${total > 1 ? 's' : ''} · ${label}`,
         meta: schedMeta(p), ts: new Date(ref).getTime(), when: relLabel(ref),
+        outcomes: outcomesOf(p.result), caption: p.caption ?? null,
       })
     }
     items.sort((a, b) => b.ts - a.ts)
@@ -235,6 +265,32 @@ export default function Activity({ theme, infra, user, org }: {
             <div style={{ marginTop: 4 }}>
               <Chip text={detail.ok === detail.total ? 'Tous publiés' : `${detail.total - detail.ok} échec(s)`} tone={detail.ok === detail.total ? 'ok' : 'warn'} />
             </div>
+            {detail.outcomes.length > 0 ? (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#52525B', marginBottom: 8 }}>
+                  Compte par compte
+                </div>
+                <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {detail.outcomes.map((o, i) => (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 7,
+                      background: 'rgba(255,255,255,0.02)', fontSize: 12,
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: 99, flexShrink: 0, background: o.ok ? '#34D399' : '#F87171' }} />
+                      <span style={{ flex: 1, minWidth: 0, color: '#E4E4E7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {o.account}{o.item ? <span style={{ color: '#71717A' }}> · {o.item}</span> : null}
+                      </span>
+                      {o.error ? <span style={{ fontSize: 11, color: '#F87171', maxWidth: 200, textAlign: 'right' }}>{o.error}</span> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p style={{ margin: '14px 0 0', fontSize: 11.5, lineHeight: 1.6, color: '#71717A' }}>
+                Pas de détail par compte pour ce run — il date d’avant leur enregistrement,
+                ou la colonne <code>result</code> manque dans la table <code>post_runs</code>.
+              </p>
+            )}
           </div>
         </Modal>
       )}
