@@ -83,23 +83,25 @@ function isAuthorised(req) {
 }
 
 const LOGIN_PAGE = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Talent Deck</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>HALO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-         background:#0E0D0C; color:#F6F1E9; font:15px/1.5 system-ui,-apple-system,sans-serif }
+         background:#0E0D0C; color:#F6F1E9; font:15px/1.5 'Instrument Sans',Helvetica,system-ui,sans-serif }
   form { width:min(340px,90vw); display:flex; flex-direction:column; gap:12px;
-         padding:26px; border:1px solid #2A2723; border-radius:14px; background:#141311 }
-  h1 { margin:0 0 4px; font-size:19px; letter-spacing:-.02em }
+         padding:26px; border:1px solid rgba(255,255,255,.08); border-radius:14px; background:#141311 }
+  h1 { margin:0 0 4px; font-size:19px; font-weight:600; letter-spacing:-.025em }
   p { margin:0; font-size:12.5px; color:#7D766B }
-  input { padding:10px 12px; border-radius:9px; border:1px solid #2A2723; background:#1A1816; color:inherit; font:inherit }
+  input { padding:10px 12px; border-radius:9px; border:1px solid rgba(255,255,255,.12); background:#1A1816; color:inherit; font:inherit }
   button { padding:10px; border:none; border-radius:9px; background:#F9AA60; color:#17140F;
-           font:inherit; font-weight:700; cursor:pointer }
+           font:inherit; font-weight:600; cursor:pointer }
   .err { color:#FF9479; font-size:12.5px }
 </style></head><body>
 <form method="POST" action="/login">
-  <h1>Talent Deck</h1>
-  <p>Cet espace est protégé par un mot de passe.</p>
+  <h1>HALO</h1>
+  <p>L’espace de l’agence est protégé par un mot de passe.</p>
   <input type="password" name="password" placeholder="Mot de passe" autofocus required>
   <button type="submit">Entrer</button>
   __ERR__

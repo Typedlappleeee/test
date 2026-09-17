@@ -3,90 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Talent Deck</title>
+<title>HALO — agence · marketing</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%238B5CF6'/%3E%3Cpath d='M9 21V11h3.4l3.6 6 3.6-6H23v10h-2.6v-5.6L17.2 21h-2.4l-3.2-5.6V21z' fill='%230B0A11'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 
 <style>
 /* ── Jetons ──────────────────────────────────────────────────────────────── */
 :root {
-  /* Palette reprise du prototype CRM Agence : sépia chaud, accent ambre. */
-  --bg:        #F7F4EF;
-  --surface:   #FFFFFF;
-  --surface-2: #F0EBE2;
-  --nav:       #FBF8F3;
-  --edge:      #E2DBCF;
-  --edge-soft: #EDE7DC;
-  --ink:       #1B1815;
-  --ink-2:     #56504705;
-  --ink-2:     #565047;
-  --ink-3:     #8A8175;
-  --accent:    #B26A18;
-  --accent-2:  #8F5310;
-  --accent-ink:#FFFFFF;
-  --accent-wash: rgba(178,106,24,.09);
-  --match:     #12855C;
-  --pass:      #C4383C;
-  --later:     #9A6407;
-  --match-wash: rgba(18,133,92,.09);
-  --pass-wash:  rgba(196,56,60,.09);
-  --later-wash: rgba(154,100,7,.10);
-  --shadow:    0 18px 40px -22px rgba(27,24,21,.32);
-  --stripe:    rgba(27,24,21,.05);
+  color-scheme: dark;
 
-  --font-display: 'Bricolage Grotesque', 'Public Sans', system-ui, sans-serif;
-  --font-body:    'Public Sans', system-ui, -apple-system, sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg:        #0E0D0C;
-    --surface:   #141311;
-    --surface-2: #1A1816;
-    --nav:       #100F0E;
-    --edge:      #2A2723;
-    --edge-soft: #201E1B;
-    --ink:       #F6F1E9;
-    --ink-2:     #B9B1A5;
-    --ink-3:     #7D766B;
-    --accent:    #F9AA60;
-    --accent-2:  #FFBF7C;
-    --accent-ink:#17140F;
-    --accent-wash: rgba(249,170,96,.12);
-    --match:     #4ADE9B;
-    --pass:      #FF9479;
-    --later:     #FBBF24;
-    --match-wash: rgba(74,222,155,.11);
-    --pass-wash:  rgba(255,148,121,.11);
-    --later-wash: rgba(251,191,36,.11);
-    --shadow:    0 24px 56px -26px rgba(0,0,0,.85);
-    --stripe:    rgba(255,255,255,.035);
-  }
-}
-:root[data-theme="dark"] {
+  /* Valeurs reprises du prototype « CRM Agence » : sépia sombre, accent ambre.
+     Le prototype n'a pas de thème clair — en inventer un le dénature, donc la
+     page s'affiche de la même façon quel que soit le réglage du navigateur. */
   --bg:        #0E0D0C;
   --surface:   #141311;
-  --surface-2: #1A1816;
-  --nav:       #100F0E;
-  --edge:      #2A2723;
-  --edge-soft: #201E1B;
-  --ink:       #F6F1E9;
+  --surface-2: #191715;
+  --nav:       #131211;
+  --edge:      rgba(255,255,255,.08);
+  --edge-soft: rgba(255,255,255,.05);
+  --edge-2:    rgba(255,255,255,.14);
+  --ink:       #F3EDE5;
   --ink-2:     #B9B1A5;
   --ink-3:     #7D766B;
+  --ink-4:     #6F685E;
   --accent:    #F9AA60;
   --accent-2:  #FFBF7C;
   --accent-ink:#17140F;
-  --accent-wash: rgba(249,170,96,.12);
-  --match:     #4ADE9B;
+  --accent-wash: rgba(249,170,96,.11);
+  --match:     #6FE3A8;
   --pass:      #FF9479;
-  --later:     #FBBF24;
-  --match-wash: rgba(74,222,155,.11);
-  --pass-wash:  rgba(255,148,121,.11);
-  --later-wash: rgba(251,191,36,.11);
+  --later:     #F9AA60;
+  --match-wash: rgba(111,227,168,.10);
+  --pass-wash:  rgba(255,148,121,.10);
+  --later-wash: rgba(249,170,96,.10);
   --shadow:    0 24px 56px -26px rgba(0,0,0,.85);
   --stripe:    rgba(255,255,255,.035);
+
+  --font-display: 'Instrument Sans', Helvetica, system-ui, sans-serif;
+  --font-body:    'Instrument Sans', Helvetica, system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -100,40 +57,43 @@ button, input, textarea, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
-/* ── Coquille d'application ─────────────────────────────────────────────── */
-.app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+/* ── Coquille, reprise du prototype au pixel ────────────────────────────── */
+.app { display: flex; min-height: 100vh; }
 .side {
-  position: sticky; top: 0; height: 100vh; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 2px; padding: 16px 12px 20px;
-  background: var(--nav); border-right: 1px solid var(--edge);
+  width: 236px; flex: 0 0 236px; position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column; gap: 28px; padding: 22px 16px;
+  border-right: 1px solid rgba(255,255,255,.08); overflow-y: auto; overflow-x: hidden;
 }
-.brand { display: flex; align-items: center; gap: 9px; padding: 4px 8px 16px; }
-.brand .mark {
-  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--accent); color: var(--accent-ink);
-  font-family: var(--font-display); font-weight: 800; font-size: 14px;
-}
-.brand b { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: -.02em; }
-.nav-group { margin-top: 14px; padding: 0 8px 5px; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
-.nav-item {
-  display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 9px;
-  border: none; border-radius: 8px; background: transparent; cursor: pointer;
-  font-size: 13px; text-align: left; color: var(--ink-2);
-}
-.nav-item:hover { background: var(--surface-2); color: var(--ink); }
-.nav-item[aria-current="page"] { background: var(--accent-wash); color: var(--ink); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
-.nav-item .lbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nav-item .cnt { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); }
-.nav-item[aria-current="page"] .cnt { color: var(--accent); }
-.nav-item.soon { cursor: default; opacity: .45; }
-.nav-item.soon:hover { background: transparent; color: var(--ink-2); }
-.nav-item.soon .cnt { font-size: 9px; letter-spacing: .06em; }
-.side-foot { margin-top: auto; padding: 14px 9px 0; font-size: 11px; line-height: 1.55; color: var(--ink-3); border-top: 1px solid var(--edge); }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.brand .mark { width: 26px; height: 26px; flex: 0 0 26px; border-radius: 7px; background: var(--accent); }
+.brand .names { display: flex; flex-direction: column; }
+.brand b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.brand span { font-size: 11px; color: #8D8579; font-family: var(--font-mono); }
 
-.wrap { max-width: 1240px; margin: 0 auto; padding: 20px 26px 56px; }
+#nav { display: flex; flex-direction: column; gap: 20px; }
+.nav-group {
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #6F685E;
+  font-family: var(--font-mono); padding: 0 12px 6px;
+}
+.nav-sec { display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; padding: 8px 12px; border-radius: 9px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; text-align: left;
+  background: transparent; color: #9B9388;
+}
+.nav-item:hover { background: rgba(255,255,255,.04); color: var(--ink); }
+.nav-item[aria-current="page"] { background: rgba(255,255,255,.07); color: #F6F1E9; }
+.nav-item .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-item .cnt { font-family: var(--font-mono); font-size: 11px; opacity: .6; }
+.nav-item.soon { cursor: default; opacity: .38; }
+.nav-item.soon:hover { background: transparent; color: #9B9388; }
+.nav-item.soon .cnt { font-size: 9px; letter-spacing: .06em; }
+.side-foot { margin-top: auto; padding: 14px 12px 0; font-size: 11px; line-height: 1.55; color: #6F685E; font-family: var(--font-mono); }
+
+.wrap { flex: 1; min-width: 0; max-width: 1280px; padding: 26px 40px 48px; }
 @media (max-width: 860px) {
-  .app { grid-template-columns: 1fr; }
+  .app { display: block; }
   .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; border-right: none; border-bottom: 1px solid var(--edge); }
   .nav-group, .side-foot, .brand { display: none; }
   .nav-item { width: auto; }
@@ -143,20 +103,20 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* ── En-tête ─────────────────────────────────────────────────────────────── */
 .top { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 18px; }
 h1 {
-  margin: 0; font-family: var(--font-display); font-size: clamp(22px, 2.4vw, 28px);
-  font-weight: 800; letter-spacing: -.035em; line-height: 1; text-wrap: balance;
+  margin: 0; font-family: var(--font-display); font-size: 24px;
+  font-weight: 600; letter-spacing: -.025em; line-height: 1; text-wrap: balance;
 }
-.lede { margin: 6px 0 0; max-width: 74ch; color: var(--ink-2); font-size: 13.5px; }
+.lede { margin: 6px 0 0; max-width: 74ch; color: #8D8579; font-size: 13.5px; }
 .top-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 
-.counts { display: flex; gap: 0; margin: 16px 0 18px; border: 1px solid var(--edge); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.counts { display: flex; gap: 0; margin: 16px 0 18px; border: 1px solid var(--edge); border-radius: 14px; overflow: hidden; background: var(--surface); }
 .count { flex: 1; padding: 9px 13px; border-right: 1px solid var(--edge-soft); }
 .count:last-child { border-right: none; }
 .count b {
   display: block; font-family: var(--font-display); font-size: 19px; font-weight: 700;
   letter-spacing: -.03em; line-height: 1.1; font-variant-numeric: tabular-nums;
 }
-.count span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.count span { display: block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-4); }
 .count.is-match b { color: var(--match); }
 .count.is-off b { color: var(--ink-3); }
 
@@ -183,7 +143,7 @@ h1 {
 .stage { position: relative; height: 640px; }
 .card {
   position: absolute; inset: 0; display: flex; flex-direction: column;
-  background: var(--surface); border: 1px solid var(--edge); border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--edge); border-radius: 14px;
   overflow: hidden; box-shadow: var(--shadow); touch-action: none; user-select: none;
   cursor: grab; will-change: transform;
 }
@@ -229,12 +189,12 @@ h1 {
 
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .chip {
-  font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
-  border: 1px solid var(--edge); background: var(--surface-2); color: var(--ink-2);
+  font-size: 11.5px; font-weight: 500; padding: 4px 9px; border-radius: 7px;
+  border: none; background: rgba(255,255,255,.05); color: #DDD5CB;
 }
-.chip.ok   { color: var(--match); border-color: var(--match); background: var(--match-wash); }
-.chip.warn { color: var(--later); border-color: var(--later); background: var(--later-wash); }
-.chip.acc  { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+.chip.ok   { color: var(--match); background: var(--match-wash); }
+.chip.warn { color: var(--later); background: var(--later-wash); }
+.chip.acc  { color: var(--accent); background: var(--accent-wash); }
 
 .rows { display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
 .row { display: flex; gap: 10px; }
@@ -280,12 +240,15 @@ kbd.key {
 .panel-body p:last-child { margin-bottom: 0; }
 
 .btn {
-  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
-  border-radius: 8px; cursor: pointer; font-size: 12.5px; font-weight: 600;
-  border: 1px solid var(--edge); background: var(--surface-2); color: var(--ink-2);
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px;
+  border-radius: 9px; cursor: pointer; font-size: 12.5px; font-weight: 500;
+  border: 1px solid var(--edge-2); background: transparent; color: #D9D2C8;
 }
-.btn:hover { border-color: var(--ink-3); color: var(--ink); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:hover { border-color: rgba(255,255,255,.30); color: var(--ink); }
+.btn.primary {
+  border: none; border-radius: 10px; padding: 0 20px; font-size: 13px; font-weight: 600;
+  background: var(--accent); color: var(--accent-ink);
+}
 .btn.primary:hover { filter: brightness(1.1); color: var(--accent-ink); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -567,6 +530,11 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
 .listrow .acts { display: flex; gap: 5px; justify-content: flex-end; }
 .listrow .acts button { flex: 1; height: 30px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; border: 1px solid currentColor; }
 .listrow .acts .p { color: var(--pass); background: var(--pass-wash); }
+.listrow .acts .rm {
+  flex: 0 0 auto; padding: 0 12px; font-weight: 500; color: var(--ink-3);
+  border: 1px solid var(--edge-2); background: transparent;
+}
+.listrow .acts .rm:hover { color: var(--pass); border-color: var(--pass); }
 .listrow .acts .l { color: var(--later); background: var(--later-wash); flex: 0 0 34px; }
 .listrow .acts .m { color: var(--match); background: var(--match-wash); }
 .listrow.done { opacity: .45; }
@@ -610,7 +578,7 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><span class="mark">S</span><b>ScaleFlow</b></div>
+    <div class="brand"><span class="mark"></span><span class="names"><b>HALO</b><span>agence · marketing</span></span></div>
     <nav id="nav"></nav>
     <div class="side-foot" id="side-foot"></div>
   </aside>
@@ -791,8 +759,8 @@ footer code { font-family: var(--font-mono); font-size: 11.5px; padding: 1px 5px
   </aside>
 
   <footer>
-    Module <b>Talents</b> de ScaleFlow, en local. Annonces, photos et décisions vivent dans <code>worker-telegram/data/</code> sur cette machine&nbsp;— rien ne part ailleurs. Sauvegarder ton travail&nbsp;: copie ce dossier.
-    Ferme cette page quand tu veux&nbsp;; c’est le worker dans le terminal qui capte les annonces, pas le navigateur.
+    Tout vit dans <code>worker-telegram/data/</code> sur cette machine — annonces, photos, décisions et données du CRM. Sauvegarder ton travail : copie ce dossier.
+    Le terminal qui tourne derrière est ce qui capte les annonces ; le navigateur ne fait que les afficher.
   </footer>
   </div>
 </div>
@@ -1515,13 +1483,13 @@ const CRM_PANES = new Set(Object.keys(window.CRM?.views ?? {}))
 function renderNav() {
   const nav = $('#nav');
   nav.innerHTML = NAV.map(g =>
-    '<div class="nav-group">' + esc(g.group) + '</div>'
+    '<div class="nav-sec"><div class="nav-group">' + esc(g.group) + '</div>'
     + g.items.map(it => it.k === 'soon'
         ? '<button class="nav-item soon" disabled><span class="lbl">' + esc(it.label) + '</span><span class="cnt">BIENTÔT</span></button>'
         : '<button class="nav-item" data-tab="' + it.k + '"' + (state.pane === it.k ? ' aria-current="page"' : '') + '>'
             + '<span class="lbl">' + esc(it.label) + '</span>'
             + ((it.count?.() ?? null) !== null ? '<span class="cnt">' + it.count() + '</span>' : '') + '</button>'
-      ).join('')
+      ).join('') + '</div>'
   ).join('');
   nav.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { state.pane = b.dataset.tab; render(); });
 

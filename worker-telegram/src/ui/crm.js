@@ -101,7 +101,7 @@
               <span style="font-size:12.5px">${esc(c.mkt ?? '—')}</span>
               <span style="font-size:12.5px">${esc(c.chat ?? '—')}</span>
               ${statusChip(c.status ?? 'Active')}
-              <span class="acts"><button class="p" data-crm-del="creators" data-id="${esc(c.id ?? c.name)}">Retirer</button></span>
+              <span class="acts"><button class="rm" data-crm-del="creators" data-id="${esc(c.id ?? c.name)}">Retirer</button></span>
             </div>`
           }).join('')
         + '</div>'
@@ -129,7 +129,7 @@
             <span style="font-size:12.5px">${esc(a.employee ?? '—')}</span>
             ${statusChip(a.status)}
             <span class="hide" style="font-size:11.5px;color:var(--ink-3)">${esc(a.last ?? '—')}</span>
-            <span class="acts"><button class="p" data-crm-del="accounts" data-id="${esc(a.id)}">Retirer</button></span>
+            <span class="acts"><button class="rm" data-crm-del="accounts" data-id="${esc(a.id)}">Retirer</button></span>
           </div>`).join('')
         + '</div>'
     },
@@ -179,7 +179,7 @@
             + people.map(e => `<div class="salon-row">
                 <span class="id"><b>${esc(e.name)}</b><span>${esc(e.email ?? '')} · depuis ${esc(e.since ?? '—')}</span></span>
                 ${statusChip(e.status)}
-                <span class="acts"><button class="p" data-crm-del="employees" data-id="${esc(e.id)}">Retirer</button></span>
+                <span class="acts"><button class="rm" data-crm-del="employees" data-id="${esc(e.id)}">Retirer</button></span>
               </div>`).join('')
           ).join('')
         + '</div>'
