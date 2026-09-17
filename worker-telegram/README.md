@@ -1,4 +1,17 @@
-# Talent Deck — worker Telegram
+# ScaleFlow CRM — agence, en local
+
+Le CRM d'agence et le sourcing de modèles, dans une seule application qui tourne
+sur ton poste. Les écrans sont ceux du prototype « CRM Agence » : Accueil,
+Daily content, Comptes, Créatrices, Banque, Employés, SOP, Inspiration, Operate
+link, Shift report — plus **Talents**, le sourcing Telegram décrit ci-dessous.
+
+Les données du CRM vivent dans `data/db.json`, à côté des annonces. La première
+ouverture charge le jeu d'exemple du prototype pour que chaque écran montre
+quelque chose ; tes propres données le remplacent au fil de l'usage.
+
+---
+
+# Talents — sourcing Telegram
 
 Écoute tes salons Telegram de marketplace, télécharge les photos, lit chaque
 annonce champ par champ, écarte les doublons — et te sert une interface pour

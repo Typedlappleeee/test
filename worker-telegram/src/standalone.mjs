@@ -168,6 +168,10 @@ const server = createServer(async (req, res) => {
         case '/api/prefs':    store.setPrefs(body.prefs); break
         case '/api/reset-decisions': store.resetDecisions(); break
         case '/api/restore': store.restore(body.id); break
+        // CRM : un point d'entrée par verbe, la collection est dans le corps.
+        case '/api/crm/put':    return json(res, 200, { row: store.crmPut(body.collection, body.row || {}) })
+        case '/api/crm/remove': store.crmRemove(body.collection, body.id); break
+        case '/api/crm/reset':  store.crmReset(body.collection); break
         case '/api/vision/run': void runVision(); break
         // Rattraper les matchs jamais transférés — bouton explicite : les
         // renvoyer d'office au démarrage expédierait tout l'historique d'un coup.
@@ -239,7 +243,7 @@ const server = createServer(async (req, res) => {
 function publicState() {
   const d = store.data
   return {
-    listings: d.listings, salons: d.salons, decisions: d.decisions,
+    listings: d.listings, salons: d.salons, decisions: d.decisions, crm: d.crm,
     stages: d.stages, notes: d.notes, prefs: d.prefs,
     stats: d.stats,
     telegram: { connected: !!client, demo: DEMO, me: meLabel },

@@ -10,6 +10,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { hardFilter, DEFAULT_PREFS } from '../../shared/talents/score.mjs'
 import { visionFilter } from './vision.mjs'
+import { CRM_SEED } from './crm-seed.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -22,6 +23,18 @@ const EMPTY = {
   notes: {},
   prefs: { ...DEFAULT_PREFS },
   stats: { duplicates: 0 },
+  // Le reste du CRM : créatrices, comptes, équipe, contenu… Chaque clé est une
+  // collection d'objets portant un `id`, manipulée par le CRUD générique
+  // ci-dessous plutôt que par seize séries de méthodes quasi identiques.
+  crm: {},
+}
+
+/** Collections du CRM et leur préfixe d'identifiant. */
+export const CRM_COLLECTIONS = {
+  creators: 'cr', accounts: 'ac', employees: 'em', seqs: 'sq', bank: 'bk',
+  sops: 'sop', inspos: 'in', groups: 'gr', opLinks: 'lk', shiftReports: 'sh',
+  invites: 'iv', roles: 'ro', accessRoles: 'ar', networks: 'nw', team: 'tm',
+  libItems: 'li',
 }
 
 export function makeLocalStore(dataDir = join(ROOT, 'data')) {
@@ -33,6 +46,14 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
   if (existsSync(file)) {
     try { db = { ...EMPTY, ...JSON.parse(readFileSync(file, 'utf8')) } }
     catch (e) { console.warn('data/db.json illisible, on repart à vide :', e.message) }
+  }
+
+  // Première ouverture : on charge le jeu d'exemple, pour que les écrans
+  // montrent quelque chose plutôt qu'une série de pages vides. Une collection
+  // déjà présente — même vidée volontairement — n'est jamais réécrite.
+  db.crm = db.crm ?? {}
+  for (const name of Object.keys(CRM_COLLECTIONS)) {
+    if (!Array.isArray(db.crm[name])) db.crm[name] = structuredClone(CRM_SEED[name] ?? [])
   }
 
   let dirty = false, flushing = null
@@ -216,6 +237,35 @@ export function makeLocalStore(dataDir = join(ROOT, 'data')) {
         l.status = l.reasons.length ? 'filtered' : 'inbox'
       }
       schedule(); notify('listings')
+    },
+
+    // ── CRM : un seul jeu d'opérations pour toutes les collections ─────────
+    crmList(name) {
+      return Array.isArray(db.crm[name]) ? db.crm[name] : []
+    },
+    crmPut(name, row) {
+      if (!(name in CRM_COLLECTIONS)) return null
+      const list = this.crmList(name)
+      const id = row.id || CRM_COLLECTIONS[name] + '-' + Math.random().toString(36).slice(2, 9)
+      const at = list.findIndex(x => x.id === id)
+      const next = { ...(at >= 0 ? list[at] : {}), ...row, id }
+      if (at >= 0) list[at] = next; else list.push(next)
+      db.crm[name] = list
+      schedule(); notify('crm')
+      return next
+    },
+    crmRemove(name, id) {
+      if (!(name in CRM_COLLECTIONS)) return false
+      db.crm[name] = this.crmList(name).filter(x => x.id !== id)
+      schedule(); notify('crm')
+      return true
+    },
+    /** Remet une collection à son jeu d'exemple. */
+    crmReset(name) {
+      if (!(name in CRM_COLLECTIONS)) return false
+      db.crm[name] = structuredClone(CRM_SEED[name] ?? [])
+      schedule(); notify('crm')
+      return true
     },
 
     /** Force une notification : l'avancement d'une analyse n'est pas un écrit. */
