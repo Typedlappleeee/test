@@ -181,6 +181,53 @@ laisses passer plusieurs jours.
 Un VPS ne devient utile que pour capter **pendant que ton PC est éteint** — ou
 pour que ton équipe voie le même parc, ce qui relève plutôt du mode Supabase.
 
+## Y accéder depuis ailleurs (téléphone, autre PC, ton domaine)
+
+Par défaut, Talent Deck n'est joignable que depuis le PC où il tourne :
+<http://localhost:8787>. Trois façons d'aller plus loin, de la plus simple à la
+plus complète.
+
+### 1. Mets un mot de passe — d'abord
+
+L'interface donne accès à tes annonces **et** permet de transférer depuis ton
+compte Telegram. Sans mot de passe, ne l'expose nulle part. Dans `.env` :
+
+```
+UI_PASSWORD=choisis-quelque-chose-de-long
+```
+
+Au démarrage, le terminal te dit où tu en es : `🔒 Protégé par mot de passe` ou
+`⚠ Aucun mot de passe`. Les scripts peuvent passer l'en-tête
+`x-talent-deck-key` avec la même valeur au lieu de se connecter.
+
+### 2. Depuis ton réseau (même box)
+
+Rien à installer : le serveur écoute déjà sur toutes les interfaces. Trouve
+l'adresse locale de ton PC (`ipconfig` sous Windows, ligne *Adresse IPv4*) et
+ouvre `http://192.168.x.x:8787` depuis ton téléphone. Autorise Node dans le
+pare-feu Windows à la première demande.
+
+### 3. Depuis partout, sous ton nom de domaine
+
+Un **tunnel Cloudflare** : ton PC garde le worker, Cloudflare expose
+`talents.tondomaine.com` et route vers lui. Pas de serveur à louer, pas de
+projet Vercel, pas de port à ouvrir sur ta box. Gratuit.
+
+```bash
+winget install --id Cloudflare.cloudflared
+cloudflared tunnel login                       # ouvre ton navigateur
+cloudflared tunnel create talent-deck
+cloudflared tunnel route dns talent-deck talents.tondomaine.com
+cloudflared tunnel run --url http://localhost:8787 talent-deck
+```
+
+Ton domaine doit être géré par Cloudflare (gratuit : tu y transfères les DNS,
+pas le domaine lui-même). Le tunnel doit tourner en même temps que le worker —
+ajoute-le à `demarrer.bat` si tu veux qu'il suive.
+
+Pour une seconde barrière, **Cloudflare Access** (gratuit jusqu'à 50 personnes)
+met une page de connexion par e-mail devant le tunnel, en plus du mot de passe.
+
 ## Où sont tes données
 
 Tout dans `worker-telegram/data/` :

@@ -8,6 +8,7 @@
 // sert http://localhost:8787. Rien d'autre à installer, aucun compte à créer.
 // Tant qu'il tourne, les annonces arrivent toutes seules.
 import { createServer } from 'node:http'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { readFileSync, existsSync, statSync } from 'node:fs'
 import { join, dirname, extname, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -51,11 +52,87 @@ function safeJoin(base, rel) {
   return p.startsWith(base) ? p : null
 }
 
+/* ── Accès ───────────────────────────────────────────────────────────────── */
+// Sans mot de passe, l'interface est réservée à `localhost` : elle donne accès
+// aux annonces captées et permet de transférer depuis le compte Telegram. Dès
+// qu'on l'expose — tunnel, réseau local, VPS — un mot de passe devient
+// indispensable. Défini dans .env, il est exigé partout.
+const PASSWORD = (env.UI_PASSWORD || '').trim()
+const COOKIE = 'td_auth'
+
+// Jeton dérivé du mot de passe : le cookie ne transporte jamais le mot de passe,
+// et invalider l'accès revient à changer UI_PASSWORD.
+const TOKEN = PASSWORD
+  ? createHash('sha256').update('talent-deck|' + PASSWORD).digest('hex').slice(0, 32)
+  : null
+
+/** Comparaison à durée constante : une comparaison naïve fuit le préfixe correct. */
+function sameSecret(a, b) {
+  const x = Buffer.from(String(a ?? ''))
+  const y = Buffer.from(String(b ?? ''))
+  if (x.length !== y.length) return false
+  return timingSafeEqual(x, y)
+}
+
+function isAuthorised(req) {
+  if (!TOKEN) return true
+  const cookie = /(?:^|;\s*)td_auth=([^;]+)/.exec(req.headers.cookie || '')
+  if (cookie && sameSecret(decodeURIComponent(cookie[1]), TOKEN)) return true
+  // En-tête, pour appeler l'API depuis un script ou une autre application.
+  return sameSecret(req.headers['x-talent-deck-key'], PASSWORD)
+}
+
+const LOGIN_PAGE = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Talent Deck</title>
+<style>
+  :root { color-scheme: dark }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:#0E0D0C; color:#F6F1E9; font:15px/1.5 system-ui,-apple-system,sans-serif }
+  form { width:min(340px,90vw); display:flex; flex-direction:column; gap:12px;
+         padding:26px; border:1px solid #2A2723; border-radius:14px; background:#141311 }
+  h1 { margin:0 0 4px; font-size:19px; letter-spacing:-.02em }
+  p { margin:0; font-size:12.5px; color:#7D766B }
+  input { padding:10px 12px; border-radius:9px; border:1px solid #2A2723; background:#1A1816; color:inherit; font:inherit }
+  button { padding:10px; border:none; border-radius:9px; background:#F9AA60; color:#17140F;
+           font:inherit; font-weight:700; cursor:pointer }
+  .err { color:#FF9479; font-size:12.5px }
+</style></head><body>
+<form method="POST" action="/login">
+  <h1>Talent Deck</h1>
+  <p>Cet espace est protégé par un mot de passe.</p>
+  <input type="password" name="password" placeholder="Mot de passe" autofocus required>
+  <button type="submit">Entrer</button>
+  __ERR__
+</form></body></html>`
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost')
   const path = url.pathname
 
   try {
+    if (TOKEN) {
+      if (path === '/login' && req.method === 'POST') {
+        const body = await new Promise(r => { let b = ''; req.on('data', c => { b += c }); req.on('end', () => r(b)) })
+        const given = decodeURIComponent((/(?:^|&)password=([^&]*)/.exec(body)?.[1] ?? '').replace(/\+/g, ' '))
+        if (sameSecret(given, PASSWORD)) {
+          res.writeHead(302, {
+            location: '/',
+            // `Secure` est omis : derrière un tunnel la connexion est chiffrée,
+            // mais en réseau local l'accès reste en clair et le cookie doit valoir.
+            'set-cookie': `${COOKIE}=${TOKEN}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}`,
+          })
+          return res.end()
+        }
+        res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' })
+        return res.end(LOGIN_PAGE.replace('__ERR__', '<span class="err">Mot de passe incorrect.</span>'))
+      }
+      if (!isAuthorised(req)) {
+        if (path.startsWith('/api/')) return json(res, 401, { error: 'Mot de passe requis' })
+        res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' })
+        return res.end(LOGIN_PAGE.replace('__ERR__', ''))
+      }
+    }
+
     if (path === '/api/state') return json(res, 200, publicState())
     if (path === '/api/vision/attributes') return json(res, 200, { attributes: ATTRIBUTES })
 
@@ -377,6 +454,9 @@ server.on('error', e => {
 server.listen(PORT, async () => {
   console.log('')
   console.log('  \x1b[35m▸ Talent Deck\x1b[0m — ouvre \x1b[4mhttp://localhost:' + PORT + '\x1b[0m')
+  console.log(PASSWORD
+    ? '  \x1b[32m🔒 Protégé par mot de passe\x1b[0m — exposable via un tunnel.'
+    : '  \x1b[33m⚠ Aucun mot de passe\x1b[0m — à réserver à localhost. Ajoute UI_PASSWORD dans .env pour l’exposer.')
   console.log('')
   if (DEMO) { await seedDemo(); log('mode démo : Telegram n’est pas connecté.') }
   else {
